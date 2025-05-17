@@ -32,7 +32,7 @@ export async function loadModules() {
 }
 
 // Create a map instance
-export async function createMap(container: string, center: [number, number], zoom: number = 13) {
+export async function createMap(container: HTMLDivElement, center: [number, number], zoom: number = 13) {
   try {
     const [Map, MapView] = await esriLoadModules(["esri/Map", "esri/views/MapView"]);
     

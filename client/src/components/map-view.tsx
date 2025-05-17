@@ -27,8 +27,8 @@ export default function MapView({
   centerCoordinates = [106.7, 10.77] // Default to Ho Chi Minh City coordinates
 }: MapViewProps) {
   const mapRef = useRef<HTMLDivElement>(null);
-  const viewRef = useRef<__esri.MapView | null>(null);
-  const graphicsLayerRef = useRef<__esri.GraphicsLayer | null>(null);
+  const viewRef = useRef<any>(null);
+  const graphicsLayerRef = useRef<any>(null);
   
   const [isMapLoaded, setIsMapLoaded] = useState(false);
   
@@ -38,8 +38,11 @@ export default function MapView({
     
     const initializeMap = async () => {
       try {
-        // Create map and view
-        const { map, view } = await createMap("map", centerCoordinates);
+        // Create map and view using the current ref instead of ID
+        const mapContainer = mapRef.current;
+        if (!mapContainer) return;
+        
+        const { map, view } = await createMap(mapContainer, centerCoordinates);
         viewRef.current = view;
         
         // Create graphics layer
@@ -121,8 +124,8 @@ export default function MapView({
   useEffect(() => {
     if (!viewRef.current || !isMapLoaded) return;
     
-    const handleClick = viewRef.current.on("click", (event) => {
-      viewRef.current!.hitTest(event).then((response) => {
+    const handleClick = viewRef.current.on("click", (event: any) => {
+      viewRef.current!.hitTest(event).then((response: any) => {
         const graphic = response.results?.[0]?.graphic;
         
         if (graphic?.attributes?.id) {
@@ -135,7 +138,9 @@ export default function MapView({
     });
     
     return () => {
-      handleClick.remove();
+      if (handleClick && typeof handleClick.remove === 'function') {
+        handleClick.remove();
+      }
     };
   }, [markers, onMarkerClick, isMapLoaded]);
   
@@ -168,7 +173,7 @@ export default function MapView({
   };
   
   return (
-    <div className="w-full md:w-3/5 h-[50vh] md:h-[calc(100vh-56px)] relative bg-gray-100" id="map" ref={mapRef}>
+    <div className="w-full md:w-3/5 h-[50vh] md:h-[calc(100vh-56px)] relative bg-gray-100" ref={mapRef}>
       {!isMapLoaded && (
         <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>

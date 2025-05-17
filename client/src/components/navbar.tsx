@@ -10,12 +10,12 @@ export function Navbar() {
     <header className="bg-white shadow-sm">
       <div className="container mx-auto px-4 py-3 flex items-center justify-between">
         <Link href="/">
-          <a className="flex items-center space-x-2">
+          <div className="flex items-center space-x-2">
             <div className="bg-primary p-1.5 rounded-md text-white">
               <Car className="h-5 w-5" />
             </div>
             <h1 className="text-xl font-semibold text-gray-800">Smart Parking</h1>
-          </a>
+          </div>
         </Link>
         
         <div className="flex items-center gap-4">
@@ -46,7 +46,7 @@ export function Navbar() {
                 </Button>
               </Link>
               <Link href="/signup">
-                <Button variant="primary" size="sm">
+                <Button variant="default" size="sm" className="bg-primary text-white hover:bg-primary/90">
                   Sign Up
                 </Button>
               </Link>

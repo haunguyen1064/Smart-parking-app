@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Navbar } from "@/components/navbar";
-import MapView, { ParkingLotMarker } from "@/components/map-view";
+import SimpleMap, { ParkingLotMarker } from "@/components/simple-map";
 import ContentPanel from "@/components/content-panel";
 import { ParkingLot, ParkingSpace } from "@/hooks/use-parking";
 import { useAuth } from "@/hooks/use-auth";
@@ -38,7 +38,7 @@ export default function Home() {
   });
   
   // Convert parking lots to markers
-  const parkingLotMarkers: ParkingLotMarker[] = parkingLots
+  const parkingLotMarkers = parkingLots
     ? parkingLots.map((lot) => ({
         id: lot.id,
         name: lot.name,
@@ -101,7 +101,7 @@ export default function Home() {
       <Navbar />
       
       <main className="flex-grow flex flex-col md:flex-row h-full">
-        <MapView
+        <SimpleMap
           markers={parkingLotMarkers}
           onMarkerClick={handleMarkerClick}
           selectedMarkerId={selectedParkingLot?.id}
