@@ -76,6 +76,48 @@ export default function ParkingDetail({
           <Car className="h-4 w-4 mt-1 text-gray-500" />
           <p>{availableCount} chỗ trống</p>
         </div>
+        
+        {/* Route information section */}
+        {routes && routes.length > 0 && (
+          <div className="mt-4 border rounded-lg p-3 bg-blue-50">
+            <h3 className="font-medium text-blue-800 mb-2 flex items-center">
+              <Route className="h-4 w-4 mr-1" />
+              Tuyến đường từ vị trí của bạn
+            </h3>
+            
+            {routes.map((route, index) => (
+              <div 
+                key={index} 
+                className={`p-2 ${index === 0 ? 'bg-blue-100 rounded-md border border-blue-200' : ''} mb-2`}
+              >
+                <div className="flex justify-between items-center">
+                  <div className="font-medium">
+                    {index === 0 ? 'Tuyến đường được đề xuất' : `Tuyến đường ${index + 1}`}
+                  </div>
+                  {index === 0 && (
+                    <span className="bg-blue-500 text-white px-2 py-0.5 rounded-full text-xs">
+                      Tốt nhất
+                    </span>
+                  )}
+                </div>
+                
+                <div className="flex space-x-4 mt-1 text-sm">
+                  <div className="flex items-center">
+                    <Clock className="h-3 w-3 mr-1 text-gray-500" />
+                    <span>{route.duration} phút</span>
+                  </div>
+                  <div>
+                    <span>{route.distance} km</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+            
+            <div className="text-xs text-gray-500 mt-2">
+              * Thời gian di chuyển có thể thay đổi tùy thuộc vào điều kiện giao thông
+            </div>
+          </div>
+        )}
       </div>
       
       <div className="mb-4">

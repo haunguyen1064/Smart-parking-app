@@ -3,6 +3,7 @@ import SearchPanel from "./search-panel";
 import ParkingDetail from "./parking-detail";
 import BookingPanel from "./booking-panel";
 import { ParkingLot, ParkingSpace } from "@/hooks/use-parking";
+import { RouteInfo } from "./simple-map";
 
 type ContentPanelProps = {
   parkingLots: ParkingLot[] | undefined;
@@ -15,6 +16,8 @@ type ContentPanelProps = {
   setSelectedParkingSpace: (parkingSpace: ParkingSpace | null) => void;
   onCreateBooking: (data: any) => Promise<void>;
   isBookingLoading: boolean;
+  routes?: RouteInfo[];
+  onNavigate?: () => void;
 };
 
 type PanelType = "search" | "detail" | "booking";
@@ -30,6 +33,8 @@ export default function ContentPanel({
   setSelectedParkingSpace,
   onCreateBooking,
   isBookingLoading,
+  routes,
+  onNavigate,
 }: ContentPanelProps) {
   const [activePanel, setActivePanel] = useState<PanelType>("search");
   

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Navbar } from "@/components/navbar";
-import SimpleMap, { ParkingLotMarker } from "@/components/simple-map";
+import SimpleMap, { ParkingLotMarker, RouteInfo } from "@/components/simple-map";
 import ContentPanel from "@/components/content-panel";
 import { ParkingLot, ParkingSpace } from "@/hooks/use-parking";
 import { useAuth } from "@/hooks/use-auth";
@@ -16,6 +16,7 @@ export default function Home() {
   // States
   const [selectedParkingLot, setSelectedParkingLot] = useState<ParkingLot | null>(null);
   const [selectedParkingSpace, setSelectedParkingSpace] = useState<ParkingSpace | null>(null);
+  const [routes, setRoutes] = useState<RouteInfo[] | null>(null);
   
   // Get all parking lots
   const {
@@ -55,7 +56,32 @@ export default function Home() {
     const parkingLot = parkingLots?.find((lot) => lot.id === marker.id);
     if (parkingLot) {
       setSelectedParkingLot(parkingLot);
+      // Clear any existing routes when selecting a new parking lot
+      setRoutes(null);
     }
+  };
+  
+  // Handle route calculation
+  const handleRouteCalculated = (calculatedRoutes: RouteInfo[]) => {
+    setRoutes(calculatedRoutes);
+    
+    // Display notification
+    if (calculatedRoutes.length > 0) {
+      toast({
+        title: "Tìm thấy tuyến đường",
+        description: `Đã tìm thấy ${calculatedRoutes.length} tuyến đường đến ${selectedParkingLot?.name}.`,
+      });
+    }
+  };
+  
+  // Handle navigation request
+  const handleNavigate = () => {
+    // Map component will handle the actual navigation calculation
+    // This just signals the intent to navigate
+    toast({
+      title: "Đang tính toán tuyến đường",
+      description: "Vui lòng đợi trong giây lát...",
+    });
   };
   
   // Create booking
@@ -105,6 +131,7 @@ export default function Home() {
           markers={parkingLotMarkers}
           onMarkerClick={handleMarkerClick}
           selectedMarkerId={selectedParkingLot?.id}
+          onRouteCalculated={handleRouteCalculated}
         />
         
         <ContentPanel
@@ -118,6 +145,8 @@ export default function Home() {
           setSelectedParkingSpace={setSelectedParkingSpace}
           onCreateBooking={createBooking}
           isBookingLoading={false}
+          routes={routes || undefined}
+          onNavigate={handleNavigate}
         />
       </main>
     </div>
