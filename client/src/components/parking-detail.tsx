@@ -1,8 +1,9 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { MapPin, Car, ArrowLeft } from "lucide-react";
+import { MapPin, Car, ArrowLeft, Navigation, Clock, Route } from "lucide-react";
 import ParkingSpotsLayout from "./parking-spots-layout";
 import { ParkingLot, ParkingSpace } from "@/hooks/use-parking";
+import { RouteInfo } from "./simple-map";
 
 type ParkingDetailProps = {
   parkingLot: ParkingLot;
@@ -10,6 +11,8 @@ type ParkingDetailProps = {
   isSpacesLoading: boolean;
   onBookNow: () => void;
   onBack: () => void;
+  onNavigate?: () => void;
+  routes?: RouteInfo[];
 };
 
 export default function ParkingDetail({ 
@@ -17,7 +20,9 @@ export default function ParkingDetail({
   parkingSpaces,
   isSpacesLoading,
   onBookNow,
-  onBack
+  onBack,
+  onNavigate,
+  routes
 }: ParkingDetailProps) {
   // Group parking spaces by zone
   const groupedSpaces = parkingSpaces.reduce((groups, space) => {
@@ -49,6 +54,17 @@ export default function ParkingDetail({
         <Button className="rounded-full text-xs" onClick={onBookNow}>
           Đặt chỗ
         </Button>
+        {onNavigate && (
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="rounded-full text-xs flex items-center" 
+            onClick={onNavigate}
+          >
+            <Navigation className="h-3 w-3 mr-1" />
+            Chỉ đường
+          </Button>
+        )}
       </div>
       
       <div className="mb-4">

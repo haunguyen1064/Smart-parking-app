@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Plus, Minus } from "lucide-react";
+import { Plus, Minus, Navigation } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { loadModules } from "esri-loader";
 
@@ -13,18 +13,26 @@ export type ParkingLotMarker = {
   isSelected?: boolean;
 };
 
+export type RouteInfo = {
+  name: string;
+  distance: number;
+  duration: number;
+};
+
 type SimpleMapProps = {
   markers: ParkingLotMarker[];
   onMarkerClick: (marker: ParkingLotMarker) => void;
   selectedMarkerId?: number;
   centerCoordinates?: [number, number];
+  onRouteCalculated?: (routes: RouteInfo[]) => void;
 };
 
 export default function SimpleMap({ 
   markers, 
   onMarkerClick, 
   selectedMarkerId, 
-  centerCoordinates = [106.7, 10.77] // Default to Ho Chi Minh City coordinates
+  centerCoordinates = [106.7, 10.77], // Default to Ho Chi Minh City coordinates
+  onRouteCalculated
 }: SimpleMapProps) {
   const mapDiv = useRef<HTMLDivElement>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -32,7 +40,12 @@ export default function SimpleMap({
   // Map state (using any to avoid TypeScript issues with ArcGIS API)
   const [view, setView] = useState<any>(null);
   const [graphicsLayer, setGraphicsLayer] = useState<any>(null);
+  const [routeGraphicsLayer, setRouteGraphicsLayer] = useState<any>(null);
   const [clickHandler, setClickHandler] = useState<any>(null);
+  const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
+  const [routeTask, setRouteTask] = useState<any>(null);
+  const [isCalculatingRoute, setIsCalculatingRoute] = useState(false);
+  const [routeResult, setRouteResult] = useState<RouteInfo[] | null>(null);
   
   // Initialize map
   useEffect(() => {
@@ -42,24 +55,46 @@ export default function SimpleMap({
     const initMap = async () => {
       try {
         // Load ArcGIS modules
-        const [esriConfig, Map, MapView, GraphicsLayer] = await loadModules([
+        const [
+          esriConfig, 
+          Map, 
+          MapView, 
+          GraphicsLayer, 
+          RouteTask, 
+          RouteParameters,
+          FeatureSet, 
+          SimpleMarkerSymbol, 
+          SimpleLineSymbol,
+          Graphic,
+          Point,
+          Locator
+        ] = await loadModules([
           "esri/config",
           "esri/Map",
           "esri/views/MapView",
-          "esri/layers/GraphicsLayer"
+          "esri/layers/GraphicsLayer",
+          "esri/tasks/RouteTask",
+          "esri/tasks/support/RouteParameters",
+          "esri/tasks/support/FeatureSet",
+          "esri/symbols/SimpleMarkerSymbol",
+          "esri/symbols/SimpleLineSymbol",
+          "esri/Graphic",
+          "esri/geometry/Point",
+          "esri/tasks/Locator"
         ]);
-        
-        // Configure basemap with a public basemap that doesn't require an API key
-        // We're not setting an API key since the current one seems to be invalid
         
         // Create map with a basemap that doesn't require an API key
         const map = new Map({
           basemap: "osm" // OpenStreetMap basemap is free to use
         });
         
-        // Create graphics layer
+        // Create graphics layer for markers
         const layer = new GraphicsLayer();
         map.add(layer);
+        
+        // Create a separate graphics layer for the route
+        const routeLayer = new GraphicsLayer();
+        map.add(routeLayer);
         
         // Create view
         const mapView = new MapView({
@@ -69,12 +104,60 @@ export default function SimpleMap({
           zoom: 13
         });
         
+        // Create route task
+        const route = new RouteTask({
+          url: "https://route-api.arcgis.com/arcgis/rest/services/World/Route/NAServer/Route_World"
+        });
+        
         // Wait for view to be ready
         await mapView.when();
+        
+        // Try to get user's current location
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(
+            (position) => {
+              const userCoordinates: [number, number] = [
+                position.coords.longitude,
+                position.coords.latitude
+              ];
+              setUserLocation(userCoordinates);
+              
+              // Add user location marker
+              const userLocationPoint = new Point({
+                longitude: userCoordinates[0],
+                latitude: userCoordinates[1]
+              });
+              
+              const userLocationSymbol = new SimpleMarkerSymbol({
+                color: "blue",
+                outline: {
+                  color: "white",
+                  width: 2
+                }
+              });
+              
+              const userLocationGraphic = new Graphic({
+                geometry: userLocationPoint,
+                symbol: userLocationSymbol,
+                attributes: {
+                  title: "Your Location",
+                  type: "user-location"
+                }
+              });
+              
+              layer.add(userLocationGraphic);
+            },
+            (error) => {
+              console.error("Error getting user location:", error);
+            }
+          );
+        }
         
         // Save references
         setView(mapView);
         setGraphicsLayer(layer);
+        setRouteGraphicsLayer(routeLayer);
+        setRouteTask(route);
         setIsLoading(false);
         
         console.log("Map initialized successfully");
@@ -244,6 +327,121 @@ export default function SimpleMap({
     }
   };
   
+  // Calculate route between user location and selected parking lot
+  const calculateRoute = async (destinationMarker: ParkingLotMarker) => {
+    if (!userLocation || !routeTask || !view || !routeGraphicsLayer) {
+      console.error("Cannot calculate route: missing required data");
+      return;
+    }
+    
+    try {
+      setIsCalculatingRoute(true);
+      
+      // Load necessary modules
+      const [Point, Graphic, RouteParameters, FeatureSet, SimpleLineSymbol] = await loadModules([
+        "esri/geometry/Point",
+        "esri/Graphic",
+        "esri/tasks/support/RouteParameters",
+        "esri/tasks/support/FeatureSet",
+        "esri/symbols/SimpleLineSymbol"
+      ]);
+      
+      // Create start point (user location)
+      const startPoint = new Point({
+        longitude: userLocation[0],
+        latitude: userLocation[1]
+      });
+      
+      // Create end point (parking lot)
+      const endPoint = new Point({
+        longitude: parseFloat(destinationMarker.longitude),
+        latitude: parseFloat(destinationMarker.latitude)
+      });
+      
+      // Create feature set for stops
+      const stopsFeatureSet = new FeatureSet();
+      stopsFeatureSet.features = [
+        new Graphic({ geometry: startPoint }),
+        new Graphic({ geometry: endPoint })
+      ];
+      
+      // Set up route parameters
+      const routeParams = new RouteParameters({
+        stops: stopsFeatureSet,
+        returnDirections: true,
+        returnRoutes: true,
+        returnStops: true,
+        directionsLanguage: "vi",  // Vietnamese language for directions
+        outSpatialReference: view.spatialReference
+      });
+      
+      // Solve the route
+      const results = await routeTask.solve(routeParams);
+      const routes = results.routeResults;
+      
+      if (routes.length > 0) {
+        // Clear previous routes
+        routeGraphicsLayer.removeAll();
+        
+        // Process results into route info objects
+        const routeInfos: RouteInfo[] = [];
+        
+        routes.forEach((routeResult: any, index: number) => {
+          // Create a line symbol for the route
+          const routeSymbol = new SimpleLineSymbol({
+            color: index === 0 ? [0, 0, 255, 0.8] : [128, 128, 128, 0.8], // blue for main route, gray for alternatives
+            width: index === 0 ? 4 : 2
+          });
+          
+          // Create a graphic for the route
+          const routeGraphic = new Graphic({
+            geometry: routeResult.route.geometry,
+            symbol: routeSymbol
+          });
+          
+          // Add route to the layer
+          routeGraphicsLayer.add(routeGraphic);
+          
+          // Extract route info
+          const routeInfo: RouteInfo = {
+            name: `Route ${index + 1}`,
+            distance: Math.round(routeResult.route.attributes.Total_Kilometers * 10) / 10, // km to 1 decimal place
+            duration: Math.round(routeResult.route.attributes.Total_Minutes) // minutes rounded to nearest integer
+          };
+          
+          routeInfos.push(routeInfo);
+        });
+        
+        // Zoom to show the entire route
+        view.goTo(routes[0].route.geometry.extent.expand(1.5));
+        
+        // Notify parent component about routes
+        if (onRouteCalculated) {
+          onRouteCalculated(routeInfos);
+        }
+        
+        // Update internal state
+        setRouteResult(routeInfos);
+      } else {
+        console.error("No routes found");
+      }
+    } catch (error) {
+      console.error("Error calculating route:", error);
+    } finally {
+      setIsCalculatingRoute(false);
+    }
+  };
+  
+  // Method to calculate route to selected marker
+  const navigateToSelectedMarker = () => {
+    if (!selectedMarkerId || !userLocation) return;
+    
+    const selectedMarker = markers.find(marker => marker.id === selectedMarkerId);
+    if (selectedMarker) {
+      calculateRoute(selectedMarker);
+    }
+  };
+
   return (
     <div className="w-full md:w-3/5 h-[50vh] md:h-[calc(100vh-56px)] relative bg-gray-100">
       {/* Map container */}
@@ -274,7 +472,30 @@ export default function SimpleMap({
         >
           <Minus className="h-4 w-4" />
         </Button>
+        
+        {/* Navigation button (only shown when a parking lot is selected and user location is available) */}
+        {selectedMarkerId && userLocation && (
+          <Button 
+            variant="default" 
+            size="icon" 
+            className="rounded-md bg-blue-600 text-white hover:bg-blue-700 shadow-md" 
+            onClick={navigateToSelectedMarker}
+            disabled={isCalculatingRoute}
+          >
+            <Navigation className="h-4 w-4" />
+          </Button>
+        )}
       </div>
+      
+      {/* Route calculation loading indicator */}
+      {isCalculatingRoute && (
+        <div className="absolute bottom-4 left-4 z-10 bg-white p-2 rounded-md shadow-md">
+          <div className="flex items-center space-x-2">
+            <div className="animate-spin h-4 w-4 border-t-2 border-blue-500"></div>
+            <span className="text-sm">Calculating route...</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
