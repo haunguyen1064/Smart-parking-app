@@ -91,6 +91,8 @@ export default function ContentPanel({
             isSpacesLoading={isSpacesLoading}
             onBookNow={handleBookNow}
             onBack={() => setSelectedParkingLot(null)}
+            onNavigate={onNavigate}
+            routes={routes}
           />
         )}
       </div>
