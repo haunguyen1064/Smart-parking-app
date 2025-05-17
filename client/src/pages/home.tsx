@@ -76,12 +76,38 @@ export default function Home() {
   
   // Handle navigation request
   const handleNavigate = () => {
-    // Map component will handle the actual navigation calculation
-    // This just signals the intent to navigate
+    // Map component will handle the actual navigation calculation when user clicks the navigation button on the map
     toast({
-      title: "Đang tính toán tuyến đường",
-      description: "Vui lòng đợi trong giây lát...",
+      title: "Hướng dẫn chỉ đường",
+      description: "Nhấn vào nút chỉ đường trên bản đồ để tính toán tuyến đường từ vị trí của bạn đến bãi đỗ xe.",
     });
+    
+    // Get user location if not already available
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        () => {
+          // Position obtained successfully 
+          toast({
+            title: "Đã tìm thấy vị trí của bạn",
+            description: "Bạn có thể tính toán tuyến đường bằng cách nhấn vào nút chỉ đường trên bản đồ.",
+          });
+        },
+        (error) => {
+          // Handle error getting location
+          toast({
+            title: "Không thể lấy vị trí",
+            description: "Vui lòng cho phép truy cập vị trí để sử dụng tính năng chỉ đường.",
+            variant: "destructive",
+          });
+        }
+      );
+    } else {
+      toast({
+        title: "Trình duyệt không hỗ trợ",
+        description: "Trình duyệt của bạn không hỗ trợ định vị. Vui lòng thử trình duyệt khác.",
+        variant: "destructive",
+      });
+    }
   };
   
   // Create booking

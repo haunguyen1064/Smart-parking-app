@@ -329,101 +329,207 @@ export default function SimpleMap({
   
   // Calculate route between user location and selected parking lot
   const calculateRoute = async (destinationMarker: ParkingLotMarker) => {
-    if (!userLocation || !routeTask || !view || !routeGraphicsLayer) {
-      console.error("Cannot calculate route: missing required data");
+    if (!userLocation || !view) {
+      console.error("Cannot calculate route: missing user location or map view");
       return;
     }
     
     try {
       setIsCalculatingRoute(true);
       
-      // Load necessary modules
-      const [Point, Graphic, RouteParameters, FeatureSet, SimpleLineSymbol] = await loadModules([
-        "esri/geometry/Point",
-        "esri/Graphic",
-        "esri/tasks/support/RouteParameters",
-        "esri/tasks/support/FeatureSet",
-        "esri/symbols/SimpleLineSymbol"
-      ]);
+      // Check if we have access to routing features
+      const hasRoutingModules = routeTask && routeGraphicsLayer;
       
-      // Create start point (user location)
-      const startPoint = new Point({
-        longitude: userLocation[0],
-        latitude: userLocation[1]
-      });
-      
-      // Create end point (parking lot)
-      const endPoint = new Point({
-        longitude: parseFloat(destinationMarker.longitude),
-        latitude: parseFloat(destinationMarker.latitude)
-      });
-      
-      // Create feature set for stops
-      const stopsFeatureSet = new FeatureSet();
-      stopsFeatureSet.features = [
-        new Graphic({ geometry: startPoint }),
-        new Graphic({ geometry: endPoint })
-      ];
-      
-      // Set up route parameters
-      const routeParams = new RouteParameters({
-        stops: stopsFeatureSet,
-        returnDirections: true,
-        returnRoutes: true,
-        returnStops: true,
-        directionsLanguage: "vi",  // Vietnamese language for directions
-        outSpatialReference: view.spatialReference
-      });
-      
-      // Solve the route
-      const results = await routeTask.solve(routeParams);
-      const routes = results.routeResults;
-      
-      if (routes.length > 0) {
-        // Clear previous routes
-        routeGraphicsLayer.removeAll();
+      if (!hasRoutingModules) {
+        console.log("Routing modules not available, using fallback calculation");
         
-        // Process results into route info objects
-        const routeInfos: RouteInfo[] = [];
-        
-        routes.forEach((routeResult: any, index: number) => {
-          // Create a line symbol for the route
-          const routeSymbol = new SimpleLineSymbol({
-            color: index === 0 ? [0, 0, 255, 0.8] : [128, 128, 128, 0.8], // blue for main route, gray for alternatives
-            width: index === 0 ? 4 : 2
-          });
+        // Create a simple direct line if ArcGIS routing is not available
+        try {
+          const [Point, Graphic, SimpleLineSymbol] = await loadModules([
+            "esri/geometry/Point",
+            "esri/Graphic",
+            "esri/symbols/SimpleLineSymbol"
+          ]);
           
-          // Create a graphic for the route
-          const routeGraphic = new Graphic({
-            geometry: routeResult.route.geometry,
-            symbol: routeSymbol
-          });
+          // Clear any previous graphics if the layer exists
+          if (graphicsLayer) {
+            // Find and remove any previous route lines
+            graphicsLayer.graphics.forEach((graphic: any) => {
+              if (graphic.attributes && graphic.attributes.type === 'route-line') {
+                graphicsLayer.remove(graphic);
+              }
+            });
+          }
           
-          // Add route to the layer
-          routeGraphicsLayer.add(routeGraphic);
-          
-          // Extract route info
-          const routeInfo: RouteInfo = {
-            name: `Route ${index + 1}`,
-            distance: Math.round(routeResult.route.attributes.Total_Kilometers * 10) / 10, // km to 1 decimal place
-            duration: Math.round(routeResult.route.attributes.Total_Minutes) // minutes rounded to nearest integer
+          // Create start and end points
+          const startPoint = {
+            type: "point",
+            longitude: userLocation[0],
+            latitude: userLocation[1]
           };
           
-          routeInfos.push(routeInfo);
-        });
-        
-        // Zoom to show the entire route
-        view.goTo(routes[0].route.geometry.extent.expand(1.5));
-        
-        // Notify parent component about routes
-        if (onRouteCalculated) {
-          onRouteCalculated(routeInfos);
+          const endPoint = {
+            type: "point",
+            longitude: parseFloat(destinationMarker.longitude),
+            latitude: parseFloat(destinationMarker.latitude)
+          };
+          
+          // Create a simple line symbol
+          const lineSymbol = {
+            type: "simple-line",
+            color: [0, 0, 255, 0.8],
+            width: 4
+          };
+          
+          // Create a polyline geometry between the two points
+          const polyline = {
+            type: "polyline",
+            paths: [
+              [userLocation[0], userLocation[1]],
+              [parseFloat(destinationMarker.longitude), parseFloat(destinationMarker.latitude)]
+            ]
+          };
+          
+          // Create a graphic for the route line
+          const routeGraphic = new Graphic({
+            geometry: polyline,
+            symbol: lineSymbol,
+            attributes: { type: 'route-line' }
+          });
+          
+          // Add the graphic to the map
+          if (graphicsLayer) {
+            graphicsLayer.add(routeGraphic);
+          }
+          
+          // Calculate straight-line distance
+          const dx = parseFloat(destinationMarker.longitude) - userLocation[0];
+          const dy = parseFloat(destinationMarker.latitude) - userLocation[1];
+          
+          // Convert to kilometers (very rough approximation)
+          const distance = Math.sqrt(dx * dx + dy * dy) * 111.32; // 1 degree ≈ 111.32 km at the equator
+          
+          // Estimate duration (assuming average speed of 30 km/h)
+          const duration = Math.round(distance / 30 * 60);
+          
+          // Create a simplified route info
+          const routeInfos: RouteInfo[] = [
+            {
+              name: "Direct Route",
+              distance: Math.round(distance * 10) / 10,
+              duration: duration
+            }
+          ];
+          
+          // Notify parent component about routes
+          if (onRouteCalculated) {
+            onRouteCalculated(routeInfos);
+          }
+          
+          // Update internal state
+          setRouteResult(routeInfos);
+          
+          return;
+        } catch (err) {
+          console.error("Error in fallback route calculation:", err);
         }
-        
-        // Update internal state
-        setRouteResult(routeInfos);
       } else {
-        console.error("No routes found");
+        // Full routing implementation with ArcGIS routing service
+        try {
+          // Load necessary modules
+          const [Point, Graphic, RouteParameters, FeatureSet, SimpleLineSymbol] = await loadModules([
+            "esri/geometry/Point",
+            "esri/Graphic",
+            "esri/tasks/support/RouteParameters",
+            "esri/tasks/support/FeatureSet",
+            "esri/symbols/SimpleLineSymbol"
+          ]);
+          
+          // Create start point (user location)
+          const startPoint = new Point({
+            longitude: userLocation[0],
+            latitude: userLocation[1]
+          });
+          
+          // Create end point (parking lot)
+          const endPoint = new Point({
+            longitude: parseFloat(destinationMarker.longitude),
+            latitude: parseFloat(destinationMarker.latitude)
+          });
+          
+          // Create feature set for stops
+          const stopsFeatureSet = new FeatureSet();
+          stopsFeatureSet.features = [
+            new Graphic({ geometry: startPoint }),
+            new Graphic({ geometry: endPoint })
+          ];
+          
+          // Set up route parameters
+          const routeParams = new RouteParameters({
+            stops: stopsFeatureSet,
+            returnDirections: true,
+            returnRoutes: true,
+            returnStops: true,
+            directionsLanguage: "vi",  // Vietnamese language for directions
+            outSpatialReference: view.spatialReference
+          });
+          
+          // Solve the route
+          const results = await routeTask.solve(routeParams);
+          const routes = results.routeResults;
+          
+          if (routes.length > 0) {
+            // Clear previous routes
+            routeGraphicsLayer.removeAll();
+            
+            // Process results into route info objects
+            const routeInfos: RouteInfo[] = [];
+            
+            routes.forEach((routeResult: any, index: number) => {
+              // Create a line symbol for the route
+              const routeSymbol = new SimpleLineSymbol({
+                color: index === 0 ? [0, 0, 255, 0.8] : [128, 128, 128, 0.8], // blue for main route, gray for alternatives
+                width: index === 0 ? 4 : 2
+              });
+              
+              // Create a graphic for the route
+              const routeGraphic = new Graphic({
+                geometry: routeResult.route.geometry,
+                symbol: routeSymbol
+              });
+              
+              // Add route to the layer
+              routeGraphicsLayer.add(routeGraphic);
+              
+              // Extract route info
+              const routeInfo: RouteInfo = {
+                name: `Route ${index + 1}`,
+                distance: Math.round(routeResult.route.attributes.Total_Kilometers * 10) / 10, // km to 1 decimal place
+                duration: Math.round(routeResult.route.attributes.Total_Minutes) // minutes rounded to nearest integer
+              };
+              
+              routeInfos.push(routeInfo);
+            });
+            
+            // Zoom to show the entire route
+            view.goTo(routes[0].route.geometry.extent.expand(1.5));
+            
+            // Notify parent component about routes
+            if (onRouteCalculated) {
+              onRouteCalculated(routeInfos);
+            }
+            
+            // Update internal state
+            setRouteResult(routeInfos);
+          } else {
+            console.error("No routes found");
+          }
+        } catch (error) {
+          console.error("Error in ArcGIS route calculation:", error);
+          
+          // Fallback to simplified calculation if ArcGIS routing fails
+          calculateRoute(destinationMarker);
+        }
       }
     } catch (error) {
       console.error("Error calculating route:", error);
