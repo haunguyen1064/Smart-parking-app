@@ -119,7 +119,7 @@ export default function ParkingLayoutModal({
   
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-lg max-h-[90vh] min-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-xl">Thêm sơ đồ</DialogTitle>
         </DialogHeader>
@@ -201,21 +201,30 @@ export default function ParkingLayoutModal({
           {/* Layout preview */}
           <div>
             <Label className="block mb-2">Xem trước sơ đồ</Label>
-            <div className="border rounded-md p-4 max-h-[300px] min-h-[200px] overflow-y-auto">
+            <div className="border rounded-md p-4 max-h-[320px] min-h-[320px] overflow-y-auto">
               {rowConfigs.length > 0 ? (
                 rowConfigs.map((row, rowIndex) => (
-                  <div key={rowIndex} className="flex flex-wrap gap-2 mb-3">
-                    <div className="w-5 h-16 flex items-center justify-center text-gray-500 text-xs mr-1">
-                      {rowIndex + 1}:
-                    </div>
-                    {Array.from({ length: row.slotCount }).map((_, slotIndex) => (
-                      <div
-                        key={slotIndex}
-                        className="w-12 h-16 rounded-md bg-blue-500 text-white flex items-center justify-center font-medium shadow-sm"
-                      >
-                        {row.prefix}{slotIndex + 1}
+                  <div key={rowIndex} className="mb-3">
+                    <div className="flex items-center mb-1">
+                      <div className="text-gray-500 text-xs mr-2">
+                        Hàng {rowIndex + 1}:
                       </div>
-                    ))}
+                      <div className="text-blue-600 text-sm font-medium">
+                        {row.prefix} ({row.slotCount} chỗ)
+                      </div>
+                    </div>
+                    <div className="overflow-x-auto pb-2">
+                      <div className="flex gap-2 min-w-fit">
+                        {Array.from({ length: row.slotCount }).map((_, slotIndex) => (
+                          <div
+                            key={slotIndex}
+                            className="w-12 h-16 rounded-md bg-blue-500 text-white flex items-center justify-center font-medium shadow-sm flex-shrink-0"
+                          >
+                            {row.prefix}{slotIndex + 1}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   </div>
                 ))
               ) : (
