@@ -24,14 +24,12 @@ export function Navbar() {
             <div className="h-9 w-24 animate-pulse rounded-md bg-gray-200"></div>
           ) : user ? (
             <div className="flex items-center gap-4">
-              {user.role === "owner" && (
-                <Link href="/owner/dashboard">
-                  <Button variant="outline" size="sm" className="flex items-center gap-2">
-                    <FileText className="h-4 w-4" />
-                    <span className="hidden md:inline">Quản lý bãi đỗ xe</span>
-                  </Button>
-                </Link>
-              )}
+              <Link href="/owner/dashboard">
+                <Button variant="outline" size="sm" className="flex items-center gap-2">
+                  <FileText className="h-4 w-4" />
+                  <span className="hidden md:inline">Quản lý bãi đỗ xe</span>
+                </Button>
+              </Link>
               
               <div className="flex items-center gap-2">
                 <Avatar className="h-8 w-8 bg-gray-200">

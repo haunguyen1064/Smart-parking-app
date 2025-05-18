@@ -180,10 +180,8 @@ export default function Login() {
                   />
                 </div>
                 
-                <Link href="/forgot-password">
-                  <a className="text-sm text-primary hover:underline">
-                    Quên mật khẩu
-                  </a>
+                <Link href="/forgot-password" className="text-sm text-primary hover:underline">
+                  Quên mật khẩu
                 </Link>
               </div>
               
@@ -200,8 +198,8 @@ export default function Login() {
           <div className="mt-6 text-center text-sm">
             <p className="text-gray-600">
               Chưa có tài khoản?{" "}
-              <Link href="/signup">
-                <a className="text-primary hover:underline">Đăng ký</a>
+              <Link href="/signup" className="text-primary hover:underline">
+                Đăng ký
               </Link>
             </p>
           </div>
@@ -209,12 +207,12 @@ export default function Login() {
           <div className="mt-6 text-center text-xs text-gray-500">
             <p>
               By continuing, you agree to our{" "}
-              <Link href="/terms">
-                <a className="text-primary hover:underline">Terms of Service</a>
+              <Link href="/terms" className="text-primary hover:underline">
+                Terms of Service
               </Link>{" "}
               and{" "}
-              <Link href="/privacy">
-                <a className="text-primary hover:underline">Privacy Policy</a>
+              <Link href="/privacy" className="text-primary hover:underline">
+                Privacy Policy
               </Link>
             </p>
           </div>
