@@ -8,6 +8,8 @@ import { useAuth } from "@/hooks/use-auth";
 import { apiRequest } from "@/lib/queryClient";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
+import RegisterParkingLot from "@/components/register-parking-lot";
 
 export default function Home() {
   const { user } = useAuth();
@@ -17,6 +19,7 @@ export default function Home() {
   const [selectedParkingLot, setSelectedParkingLot] = useState<ParkingLot | null>(null);
   const [selectedParkingSpace, setSelectedParkingSpace] = useState<ParkingSpace | null>(null);
   const [routes, setRoutes] = useState<RouteInfo[] | null>(null);
+  const [showRegisterForm, setShowRegisterForm] = useState(false);
   
   // Get all parking lots
   const {
@@ -167,6 +170,24 @@ export default function Home() {
     <div className="flex flex-col min-h-screen">
       <Navbar />
       
+      {/* Home buttons overlay */}
+      {!selectedParkingLot && user && (
+        <div className="absolute top-24 left-1/2 transform -translate-x-1/2 z-20 flex space-x-4">
+          <Button 
+            className="rounded-full px-8 py-6 bg-indigo-500 bg-opacity-90 text-white hover:bg-indigo-600"
+          >
+            Tìm bãi đỗ xe gần bạn
+          </Button>
+          
+          <Button 
+            className="rounded-full px-8 py-6 bg-indigo-500 bg-opacity-90 text-white hover:bg-indigo-600"
+            onClick={() => setShowRegisterForm(true)}
+          >
+            Đăng ký bãi đỗ xe của bạn
+          </Button>
+        </div>
+      )}
+      
       <main className="flex-grow flex flex-col md:flex-row h-full">
         <SimpleMap
           markers={parkingLotMarkers}
@@ -190,6 +211,11 @@ export default function Home() {
           onNavigate={handleNavigate}
         />
       </main>
+      
+      {/* Register Parking Lot Form */}
+      {showRegisterForm && (
+        <RegisterParkingLot onClose={() => setShowRegisterForm(false)} />
+      )}
     </div>
   );
 }
