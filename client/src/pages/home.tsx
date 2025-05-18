@@ -172,15 +172,15 @@ export default function Home() {
       
       {/* Home buttons overlay */}
       {!selectedParkingLot && user && (
-        <div className="absolute top-24 left-1/2 transform -translate-x-1/2 z-20 flex space-x-4">
+        <div className="absolute top-24 right-8 z-20 flex flex-col space-y-2">
           <Button 
-            className="rounded-full px-8 py-6 bg-indigo-500 bg-opacity-90 text-white hover:bg-indigo-600"
+            className="rounded-full px-6 py-2 bg-indigo-400 text-white hover:bg-indigo-500"
           >
             Tìm bãi đỗ xe gần bạn
           </Button>
           
           <Button 
-            className="rounded-full px-8 py-6 bg-indigo-500 bg-opacity-90 text-white hover:bg-indigo-600"
+            className="rounded-full px-6 py-2 bg-indigo-400 text-white hover:bg-indigo-500"
             onClick={() => setShowRegisterForm(true)}
           >
             Đăng ký bãi đỗ xe của bạn
