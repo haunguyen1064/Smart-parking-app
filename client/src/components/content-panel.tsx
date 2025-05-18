@@ -42,7 +42,7 @@ export default function ContentPanel({
   onRegisterParking
 }: ContentPanelProps) {
   const { user } = useAuth();
-  const [activePanel, setActivePanel] = useState<PanelType>(user ? "home" : "search");
+  const [activePanel, setActivePanel] = useState<PanelType>("home");
   
   // Update active panel based on selection
   useEffect(() => {
