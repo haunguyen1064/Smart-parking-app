@@ -58,7 +58,7 @@ export default function RegisterParkingLotPanel({ onBack }: RegisterParkingLotPa
         </div>
       </div>
       
-      <div className="p-4 overflow-y-auto flex-grow">
+      <div className="p-4 overflow-y-auto flex-grow" style={{ overflowY: 'auto', maxHeight: 'calc(100vh - 150px)' }}>
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Parking Lot Name */}
           <div>
