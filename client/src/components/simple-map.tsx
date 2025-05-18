@@ -58,18 +58,30 @@ export default function SimpleMap({
     const initMap = async () => {
       try {
         // Load basic map modules
-        const [esriConfig, Map, MapView, GraphicsLayer, Graphic, Point] = await loadModules([
+        const [esriConfig, Map, MapView, GraphicsLayer, Graphic, Point, RouteTask, RouteParameters] = await loadModules([
           "esri/config",
           "esri/Map",
           "esri/views/MapView",
           "esri/layers/GraphicsLayer",
           "esri/Graphic",
-          "esri/geometry/Point"
+          "esri/geometry/Point",
+          "esri/tasks/RouteTask",
+          "esri/tasks/support/RouteParameters"
         ], { css: false }); // CSS is already loaded above
+        
+        // Configure API key
+        esriConfig.apiKey = "AAPTxy8BH1VEsoebNVZXo8HurJoE9iZ23rcLOCKv4LGb2GWB9M7bDmsO8WzljuTlRGXy2NEKygbZEcMd4NYx-tHCiaqPjA9ONpdFDEffSKRJagdQr7A8hbXH0idSNA9UeafnN_wTxbonRF19Xdfrr5hzrmSsNdTQgqz0QYvTa9I4hPrd_kqlnIACRyteJaKtWhQqqnu1uwmw-NRYPsktPk-gRzfNv-09JB2MXLhU3DiEELI";
+        
+        // Set up route task using ArcGIS routing service
+        const routeTask = new RouteTask({
+          url: "https://route-api.arcgis.com/arcgis/rest/services/World/Route/NAServer/Route_World"
+        });
+        
+        setRouteTask(routeTask);
         
         // Configure map
         const map = new Map({
-          basemap: "osm" // OpenStreetMap basemap is free to use and doesn't require an API key
+          basemap: "streets-navigation-vector" // Streets basemap which works well with routing
         });
         
         // Create graphics layer for markers
@@ -361,257 +373,307 @@ export default function SimpleMap({
     try {
       setIsCalculatingRoute(true);
       
-      // Use a simplified direct line for routing
-      try {
-        // Load necessary modules
-        const [Point, Graphic] = await loadModules([
-          "esri/geometry/Point",
-          "esri/Graphic"
-        ]);
-        
-        // Create start point (user location)
-        const startPoint = new Point({
-          longitude: userLocation[0],
-          latitude: userLocation[1]
+      // Clear any previous route graphics
+      if (graphicsLayer) {
+        // Find and remove any previous route-related graphics
+        const itemsToRemove: any[] = [];
+        graphicsLayer.graphics.items.forEach((graphic: any) => {
+          if (graphic.attributes && 
+             (graphic.attributes.type === 'route-line' || 
+              graphic.attributes.type === 'route-line-outline' || 
+              graphic.attributes.type === 'route-arrow')) {
+            itemsToRemove.push(graphic);
+          }
         });
         
-        // Create end point (parking lot)
-        const endPoint = new Point({
-          longitude: parseFloat(destinationMarker.longitude),
-          latitude: parseFloat(destinationMarker.latitude)
+        // Remove the items outside of the forEach
+        itemsToRemove.forEach(graphic => {
+          graphicsLayer.remove(graphic);
         });
-        
-        // Clear any previous route graphics from all layers
-        if (graphicsLayer) {
-          // Find and remove any previous route-related graphics
-          const itemsToRemove = [];
-          graphicsLayer.graphics.items.forEach((graphic: any) => {
-            if (graphic.attributes && 
-               (graphic.attributes.type === 'route-line' || 
-                graphic.attributes.type === 'route-arrow')) {
-              itemsToRemove.push(graphic);
-            }
+      }
+      
+      // Also clear the route graphics layer if it exists
+      if (routeGraphicsLayer) {
+        routeGraphicsLayer.removeAll();
+      }
+      
+      // Check if we have access to the routing service
+      if (routeTask) {
+        try {
+          // Load necessary routing modules
+          const [Point, Graphic, FeatureSet, RouteParameters] = await loadModules([
+            "esri/geometry/Point",
+            "esri/Graphic",
+            "esri/tasks/support/FeatureSet",
+            "esri/tasks/support/RouteParameters"
+          ]);
+          
+          // Create start point (user location)
+          const startPoint = new Point({
+            longitude: userLocation[0],
+            latitude: userLocation[1]
           });
           
-          // Remove the items outside of the forEach to avoid issues
-          itemsToRemove.forEach(graphic => {
-            graphicsLayer.remove(graphic);
+          // Create end point (parking lot)
+          const endPoint = new Point({
+            longitude: parseFloat(destinationMarker.longitude),
+            latitude: parseFloat(destinationMarker.latitude)
           });
-        }
-        
-        // Also clear the route graphics layer if it exists
-        if (routeGraphicsLayer) {
-          routeGraphicsLayer.removeAll();
-        }
-        
-        // Create a more realistic curved path with intermediate points
-        // This helps make the route look more like what you'd see in Google Maps
-        const startLng = userLocation[0];
-        const startLat = userLocation[1];
-        const endLng = parseFloat(destinationMarker.longitude);
-        const endLat = parseFloat(destinationMarker.latitude);
-        
-        // Generate a path with multiple points along a slightly curved route
-        const paths = [];
-        const numPoints = 15; // More points for a smoother curve
-        
-        for (let i = 0; i <= numPoints; i++) {
-          const t = i / numPoints;
-          // Linear interpolation for basic path
-          let lng = startLng + t * (endLng - startLng);
-          let lat = startLat + t * (endLat - startLat);
           
-          // Add slight curve using sine function (if not a very short route)
-          const dist = Math.sqrt(Math.pow(endLng - startLng, 2) + Math.pow(endLat - startLat, 2));
-          if (dist > 0.01) { // Only add curve for longer routes
-            // Calculate perpendicular offset (normal to the direct path)
-            const perpFactor = Math.sin(t * Math.PI) * 0.005; // Controls curve amount
-            const dirX = endLat - startLat;
-            const dirY = -(endLng - startLng);
-            const mag = Math.sqrt(dirX * dirX + dirY * dirY);
-            if (mag > 0) {
-              // Apply perpendicular offset
-              lng += (dirY / mag) * perpFactor;
-              lat += (dirX / mag) * perpFactor;
+          // Create a simple marker symbol for stops
+          const stopSymbol = {
+            type: "simple-marker",
+            color: [255, 255, 255],
+            size: 12,
+            outline: {
+              color: [0, 0, 0],
+              width: 1
             }
-          }
+          };
           
-          paths.push([lng, lat]);
-        }
-        
-        // Create the polyline with the curved path
-        const polylineJson = {
-          type: "polyline",
-          paths: [paths]
-        };
-        
-        // Create a more visually appealing line symbol for the route 
-        // with a Google Maps style appearance
-        const lineSymbol = {
-          type: "simple-line",
-          color: [0, 132, 255, 0.8], // Bright blue color similar to Google Maps
-          width: 6,
-          style: "solid",
-          cap: "round",
-          join: "round"
-        };
-        
-        // Also create a secondary route outline for better visibility
-        const outlineSymbol = {
-          type: "simple-line",
-          color: [255, 255, 255, 0.5], // White outline
-          width: 9,
-          style: "solid",
-          cap: "round",
-          join: "round"
-        };
-        
-        // First create and add the white outline for the route (drawn underneath)
-        const routeOutlineGraphic = new Graphic({
-          geometry: polylineJson,
-          symbol: outlineSymbol,
-          attributes: { type: 'route-line-outline' }
-        });
-        
-        // Then create the main blue route line
-        const routeGraphic = new Graphic({
-          geometry: polylineJson,
-          symbol: lineSymbol,
-          attributes: { type: 'route-line' }
-        });
-        
-        // Add both graphics to the map - outline first so it appears underneath
-        if (routeGraphicsLayer) {
-          routeGraphicsLayer.add(routeOutlineGraphic);
-          routeGraphicsLayer.add(routeGraphic);
-        } else if (graphicsLayer) {
-          // Fallback to the main graphics layer if route layer is not available
-          graphicsLayer.add(routeOutlineGraphic);
-          graphicsLayer.add(routeGraphic);
-        }
-        
-        // Add directionality arrows to indicate the route direction
-        const midpoint = {
-          x: (userLocation[0] + parseFloat(destinationMarker.longitude)) / 2,
-          y: (userLocation[1] + parseFloat(destinationMarker.latitude)) / 2
-        };
-        
-        const arrowSymbol = {
-          type: "picture-marker",
-          url: "https://static.arcgis.com/images/Symbols/Transportation/DefaultTransitRight.png",
-          width: 20,
-          height: 20
-        };
-        
-        const arrowGraphic = new Graphic({
-          geometry: {
-            type: "point",
-            x: midpoint.x,
-            y: midpoint.y,
-            spatialReference: view.spatialReference
-          },
-          symbol: arrowSymbol,
-          attributes: { type: 'route-arrow' }
-        });
-        
-        if (graphicsLayer) {
-          graphicsLayer.add(arrowGraphic);
-        }
-        
-        // Calculate straight-line distance
-        const dx = parseFloat(destinationMarker.longitude) - userLocation[0];
-        const dy = parseFloat(destinationMarker.latitude) - userLocation[1];
-        
-        // Convert to kilometers (rough approximation)
-        const distance = Math.sqrt(dx * dx + dy * dy) * 111.32; // 1 degree ≈ 111.32 km at the equator
-        
-        // Estimate travel duration using different modes
-        const walkingSpeed = 5; // km/h
-        const drivingSpeed = 30; // km/h
-        const walkingDuration = Math.round(distance / walkingSpeed * 60);
-        const drivingDuration = Math.round(distance / drivingSpeed * 60);
-        
-        // Create route info objects for different travel modes
-        const routeInfos: RouteInfo[] = [
-          {
-            name: "Driving",
-            distance: Math.round(distance * 10) / 10,
-            duration: drivingDuration
-          },
-          {
-            name: "Walking",
-            distance: Math.round(distance * 10) / 10,
-            duration: walkingDuration
+          // Create graphics for the start and end points
+          const startGraphic = new Graphic({
+            geometry: startPoint,
+            symbol: stopSymbol
+          });
+          
+          const endGraphic = new Graphic({
+            geometry: endPoint,
+            symbol: stopSymbol
+          });
+          
+          // Create a feature set for stops
+          const stopsFeatureSet = new FeatureSet({
+            features: [startGraphic, endGraphic]
+          });
+          
+          // Create route parameters
+          const routeParams = new RouteParameters({
+            stops: stopsFeatureSet,
+            returnRoutes: true,
+            returnDirections: true,
+            directionsLanguage: "vi", // Vietnamese for directions
+            findBestSequence: false, // Because order matters - start to end
+            preserveFirstStop: true,
+            preserveLastStop: true,
+            returnStops: true,
+            returnZ: false,
+            // Add travel modes
+            restrictionAttributes: ["Avoid Toll Roads", "Avoid Unpaved Roads"],
+            outputGeometry: true
+          });
+          
+          // Get the route from the ArcGIS routing service
+          const result = await routeTask.solve(routeParams);
+          
+          if (result.routeResults && result.routeResults.length > 0) {
+            // Create line symbols for the route
+            const routeOutlineSymbol = {
+              type: "simple-line",
+              color: [255, 255, 255, 0.5], // White outline
+              width: 9,
+              style: "solid",
+              cap: "round",
+              join: "round"
+            };
+            
+            const routeLineSymbol = {
+              type: "simple-line",
+              color: [0, 132, 255, 0.8], // Bright blue, similar to Google Maps
+              width: 6,
+              style: "solid",
+              cap: "round",
+              join: "round"
+            };
+            
+            // The route geometry contains the path that follows streets
+            const routeGeometry = result.routeResults[0].route.geometry;
+            
+            // Create and add graphics for the route
+            const routeOutlineGraphic = new Graphic({
+              geometry: routeGeometry,
+              symbol: routeOutlineSymbol,
+              attributes: { type: 'route-line-outline' }
+            });
+            
+            const routeLineGraphic = new Graphic({
+              geometry: routeGeometry,
+              symbol: routeLineSymbol,
+              attributes: { type: 'route-line' }
+            });
+            
+            // Add the route graphics to the map
+            if (routeGraphicsLayer) {
+              routeGraphicsLayer.add(routeOutlineGraphic);
+              routeGraphicsLayer.add(routeLineGraphic);
+            } else if (graphicsLayer) {
+              graphicsLayer.add(routeOutlineGraphic);
+              graphicsLayer.add(routeLineGraphic);
+            }
+            
+            // Extract route info (distance and time)
+            const routeInfo = result.routeResults[0].route.attributes;
+            
+            // Calculate walking time - typically 5x slower than driving
+            const drivingDistance = routeInfo.Total_Kilometers || 0;
+            const drivingDuration = Math.round(routeInfo.Total_Minutes) || 0;
+            const walkingDuration = Math.round(drivingDistance / 5 * 60); // Walking at ~5 km/h
+            
+            // Create route info objects for different travel modes
+            const routeInfos: RouteInfo[] = [
+              {
+                name: "Driving",
+                distance: Math.round(drivingDistance * 10) / 10,
+                duration: drivingDuration
+              },
+              {
+                name: "Walking",
+                distance: Math.round(drivingDistance * 10) / 10,
+                duration: walkingDuration
+              }
+            ];
+            
+            // Zoom to route with padding
+            view.goTo(routeGeometry.extent.expand(1.5), {
+              duration: 1000,
+              easing: "ease-out"
+            });
+            
+            // Notify parent component about routes
+            if (onRouteCalculated) {
+              onRouteCalculated(routeInfos);
+            }
+            
+            // Update internal state
+            setRouteResult(routeInfos);
+          } else {
+            throw new Error("No route found");
           }
-        ];
-        
-        // Zoom to show both points with padding
-        const extent = {
-          xmin: Math.min(userLocation[0], parseFloat(destinationMarker.longitude)),
-          ymin: Math.min(userLocation[1], parseFloat(destinationMarker.latitude)),
-          xmax: Math.max(userLocation[0], parseFloat(destinationMarker.longitude)),
-          ymax: Math.max(userLocation[1], parseFloat(destinationMarker.latitude)),
-          spatialReference: view.spatialReference
-        };
-        
-        view.goTo(extent, {
-          duration: 1000,
-          easing: "ease-out"
-        }).catch((err) => console.warn('Map navigation error:', err));
-        
-        // Notify parent component about routes
-        if (onRouteCalculated) {
-          onRouteCalculated(routeInfos);
+        } catch (err) {
+          console.error("Error in ArcGIS routing:", err);
+          // Fall back to direct line if routing service fails
+          drawFallbackRoute(destinationMarker);
         }
-        
-        // Update internal state
-        setRouteResult(routeInfos);
-        
-      } catch (err) {
-        console.error("Error calculating route:", err);
-        
-        // Even if there's an error with the graphics, still try to provide route information
-        const destinationLng = parseFloat(destinationMarker.longitude);
-        const destinationLat = parseFloat(destinationMarker.latitude);
-        
-        // Calculate distance using Haversine formula for more accuracy
-        const R = 6371; // Radius of the Earth in km
-        const dLat = (destinationLat - userLocation[1]) * Math.PI / 180;
-        const dLon = (destinationLng - userLocation[0]) * Math.PI / 180;
-        const a = 
-          Math.sin(dLat/2) * Math.sin(dLat/2) +
-          Math.cos(userLocation[1] * Math.PI / 180) * Math.cos(destinationLat * Math.PI / 180) * 
-          Math.sin(dLon/2) * Math.sin(dLon/2); 
-        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
-        const distance = R * c;
-        
-        // Estimate durations
-        const drivingDuration = Math.round(distance / 30 * 60);
-        const walkingDuration = Math.round(distance / 5 * 60);
-        
-        const routeInfos: RouteInfo[] = [
-          {
-            name: "Driving",
-            distance: Math.round(distance * 10) / 10,
-            duration: drivingDuration
-          },
-          {
-            name: "Walking",
-            distance: Math.round(distance * 10) / 10,
-            duration: walkingDuration
-          }
-        ];
-        
-        if (onRouteCalculated) {
-          onRouteCalculated(routeInfos);
-        }
-        
-        setRouteResult(routeInfos);
+      } else {
+        // If routing service isn't available, use fallback direct line method
+        console.log("Routing service not available, using fallback route");
+        drawFallbackRoute(destinationMarker);
       }
     } catch (error) {
       console.error("Error in main route calculation:", error);
+      // Final fallback - if everything else fails
+      drawFallbackRoute(destinationMarker);
     } finally {
       setIsCalculatingRoute(false);
+    }
+  };
+  
+  // Fallback route drawing function (simple direct line)
+  const drawFallbackRoute = async (destinationMarker: ParkingLotMarker) => {
+    if (!userLocation || !view || !graphicsLayer) return;
+    
+    try {
+      // Load necessary modules
+      const [Graphic] = await loadModules(["esri/Graphic"]);
+      
+      // Create a simple line geometry
+      const lineGeometry = {
+        type: "polyline",
+        paths: [[userLocation[0], userLocation[1]], 
+                [parseFloat(destinationMarker.longitude), parseFloat(destinationMarker.latitude)]]
+      };
+      
+      // Create symbols
+      const outlineSymbol = {
+        type: "simple-line",
+        color: [255, 255, 255, 0.5], // White outline
+        width: 9,
+        style: "solid",
+        cap: "round",
+        join: "round"
+      };
+      
+      const lineSymbol = {
+        type: "simple-line",
+        color: [0, 132, 255, 0.8], // Blue line
+        width: 6,
+        style: "dash",  // Dashed to indicate it's an approximate route
+        cap: "round",
+        join: "round"
+      };
+      
+      // Create graphics
+      const outlineGraphic = new Graphic({
+        geometry: lineGeometry,
+        symbol: outlineSymbol,
+        attributes: { type: 'route-line-outline' }
+      });
+      
+      const lineGraphic = new Graphic({
+        geometry: lineGeometry,
+        symbol: lineSymbol,
+        attributes: { type: 'route-line' }
+      });
+      
+      // Add to graphics layer
+      graphicsLayer.add(outlineGraphic);
+      graphicsLayer.add(lineGraphic);
+      
+      // Calculate approximate distance and duration
+      // Calculate distance using Haversine formula for more accuracy
+      const destLng = parseFloat(destinationMarker.longitude);
+      const destLat = parseFloat(destinationMarker.latitude);
+      const R = 6371; // Radius of the Earth in km
+      const dLat = (destLat - userLocation[1]) * Math.PI / 180;
+      const dLon = (destLng - userLocation[0]) * Math.PI / 180;
+      const a = 
+        Math.sin(dLat/2) * Math.sin(dLat/2) +
+        Math.cos(userLocation[1] * Math.PI / 180) * Math.cos(destLat * Math.PI / 180) * 
+        Math.sin(dLon/2) * Math.sin(dLon/2); 
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
+      const distance = R * c;
+      
+      // Estimate durations
+      const drivingDuration = Math.round(distance / 30 * 60); // 30 km/h average
+      const walkingDuration = Math.round(distance / 5 * 60);  // 5 km/h average
+      
+      const routeInfos: RouteInfo[] = [
+        {
+          name: "Driving (estimated)",
+          distance: Math.round(distance * 10) / 10,
+          duration: drivingDuration
+        },
+        {
+          name: "Walking (estimated)",
+          distance: Math.round(distance * 10) / 10,
+          duration: walkingDuration
+        }
+      ];
+      
+      // Zoom to show both points
+      const extent = {
+        xmin: Math.min(userLocation[0], destLng),
+        ymin: Math.min(userLocation[1], destLat),
+        xmax: Math.max(userLocation[0], destLng),
+        ymax: Math.max(userLocation[1], destLat),
+        spatialReference: view.spatialReference
+      };
+      
+      view.goTo(extent, {
+        duration: 1000,
+        easing: "ease-out"
+      }).catch(err => console.warn('Map navigation error:', err));
+      
+      // Notify parent component
+      if (onRouteCalculated) {
+        onRouteCalculated(routeInfos);
+      }
+      
+      // Update internal state
+      setRouteResult(routeInfos);
+      
+    } catch (error) {
+      console.error("Error in fallback route:", error);
     }
   };
   
