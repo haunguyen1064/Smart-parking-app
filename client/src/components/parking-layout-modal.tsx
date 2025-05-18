@@ -42,7 +42,7 @@ export default function ParkingLayoutModal({
   const [layoutName, setLayoutName] = useState<string>("");
   
   // Number of rows
-  const [rowCount, setRowCount] = useState<number>(1);
+  const [rowCount, setRowCount] = useState<number>(0);
   
   // Selected row for editing
   const [selectedRowIndex, setSelectedRowIndex] = useState<number>(0);
@@ -117,7 +117,7 @@ export default function ParkingLayoutModal({
       // Reset to initial/default state if no saved state exists
       if (!savedState) {
         setLayoutName("");
-        setRowCount(1);
+        setRowCount(0);
         setSelectedRowIndex(0);
         setRowConfigs([]);
       }
@@ -179,7 +179,7 @@ export default function ParkingLayoutModal({
               min={0}
               max={10}
               value={rowCount}
-              onChange={(e) => setRowCount(Math.max(0, parseInt(e.target.value)))}
+              onChange={(e) => setRowCount(Math.max(0, parseInt(e.target.value) || 0))}
               placeholder="Nhập số hàng"
             />
           </div>
@@ -217,7 +217,7 @@ export default function ParkingLayoutModal({
                   type="number"
                   min={1}
                   max={20}
-                  placeholder="Nhập số chỗ đỗ (1-20)"
+                  placeholder="Nhập số chỗ đỗ"
                   value={rowConfigs[selectedRowIndex]?.slotCount || 0}
                   onChange={(e) => handleSlotCountChange(parseInt(e.target.value) || 0)}
                 />
