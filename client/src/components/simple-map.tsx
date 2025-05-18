@@ -619,19 +619,29 @@ export default function SimpleMap({
         }
       ];
       
-      // Zoom to show both points
-      const extent = {
-        xmin: Math.min(startLng, endLng) - 0.001,
-        ymin: Math.min(startLat, endLat) - 0.001,
-        xmax: Math.max(startLng, endLng) + 0.001,
-        ymax: Math.max(startLat, endLat) + 0.001,
-        spatialReference: view.spatialReference
-      };
-      
-      view.goTo(extent, {
-        duration: 1000,
-        easing: "ease-out"
-      });
+      // Zoom to show both points in a safe way
+      try {
+        // Create properly formatted extent object for the map
+        const buffer = 0.001; // Buffer around points
+        const viewExtent = {
+          type: "extent",
+          xmin: Math.min(startLng, endLng) - buffer,
+          ymin: Math.min(startLat, endLat) - buffer,
+          xmax: Math.max(startLng, endLng) + buffer,
+          ymax: Math.max(startLat, endLat) + buffer,
+          spatialReference: { wkid: 4326 }
+        };
+        
+        view.goTo(viewExtent, {
+          duration: 1000,
+          easing: "ease-out"
+        });
+      } catch (error) {
+        console.warn("Error zooming to points:", error);
+        // Fallback - just center on the destination
+        view.center = [endLng, endLat];
+        view.zoom = 15;
+      }
       
       // Notify parent component
       if (onRouteCalculated) {
