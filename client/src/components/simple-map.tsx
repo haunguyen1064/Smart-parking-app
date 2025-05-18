@@ -31,19 +31,18 @@ export default function SimpleMap({
   markers, 
   onMarkerClick, 
   selectedMarkerId, 
-  centerCoordinates = [106.7, 10.77], // Default to Ho Chi Minh City coordinates
+  centerCoordinates = [106.7, 10.77], // Default to Ho Chi Minh City
   onRouteCalculated
 }: SimpleMapProps) {
   const mapDiv = useRef<HTMLDivElement>(null);
   const [isLoading, setIsLoading] = useState(true);
   
-  // Map state (using any to avoid TypeScript issues with ArcGIS API)
+  // Map state
   const [view, setView] = useState<any>(null);
   const [graphicsLayer, setGraphicsLayer] = useState<any>(null);
   const [routeGraphicsLayer, setRouteGraphicsLayer] = useState<any>(null);
   const [clickHandler, setClickHandler] = useState<any>(null);
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
-  const [routeTask, setRouteTask] = useState<any>(null);
   const [isCalculatingRoute, setIsCalculatingRoute] = useState(false);
   const [routeResult, setRouteResult] = useState<RouteInfo[] | null>(null);
   
@@ -58,7 +57,6 @@ export default function SimpleMap({
     const initMap = async () => {
       try {
         // Load basic map modules
-        // Load only the basic modules first to ensure the map displays
         const [esriConfig, Map, MapView, GraphicsLayer, Graphic, Point] = await loadModules([
           "esri/config",
           "esri/Map",
@@ -71,16 +69,14 @@ export default function SimpleMap({
         // Configure API key
         esriConfig.apiKey = "AAPTxy8BH1VEsoebNVZXo8HurJoE9iZ23rcLOCKv4LGb2GWB9M7bDmsO8WzljuTlRGXy2NEKygbZEcMd4NYx-tHCiaqPjA9ONpdFDEffSKRJagdQr7A8hbXH0idSNA9UeafnN_wTxbonRF19Xdfrr5hzrmSsNdTQgqz0QYvTa9I4hPrd_kqlnIACRyteJaKtWhQqqnu1uwmw-NRYPsktPk-gRzfNv-09JB2MXLhU3DiEELI";
         
-        // We'll load the routing modules later when needed to avoid initialization issues
-        
-        // Configure map
+        // Configure map with a basemap optimized for street navigation
         const map = new Map({
-          basemap: "osm" // OpenStreetMap basemap is more reliable
+          basemap: "streets" // Use a street-focused basemap
         });
         
         // Create graphics layer for markers
-        const layer = new GraphicsLayer();
-        map.add(layer);
+        const markersLayer = new GraphicsLayer();
+        map.add(markersLayer);
         
         // Create a separate graphics layer for the route
         const routeLayer = new GraphicsLayer();
@@ -111,7 +107,7 @@ export default function SimpleMap({
         
         // Save references for the map view and graphics layers
         setView(mapView);
-        setGraphicsLayer(layer);
+        setGraphicsLayer(markersLayer);
         setRouteGraphicsLayer(routeLayer);
         setIsLoading(false);
         
@@ -152,7 +148,7 @@ export default function SimpleMap({
                 }
               });
               
-              layer.add(userLocationGraphic);
+              markersLayer.add(userLocationGraphic);
               
               // Add a text label for user's location
               const textSymbol = {
@@ -174,7 +170,7 @@ export default function SimpleMap({
                 symbol: textSymbol
               });
               
-              layer.add(labelGraphic);
+              markersLayer.add(labelGraphic);
               
               // Center map on user location with animation
               mapView.goTo({
@@ -368,125 +364,232 @@ export default function SimpleMap({
       setIsCalculatingRoute(true);
       
       // Clear any previous route graphics
-      if (graphicsLayer) {
-        // Remove any previous route graphics
-        const itemsToRemove: any[] = [];
-        graphicsLayer.graphics.forEach((graphic: any) => {
-          if (graphic.attributes && 
-             (graphic.attributes.type === 'route-line' || 
-              graphic.attributes.type === 'route-line-outline')) {
-            itemsToRemove.push(graphic);
-          }
-        });
-        
-        // Remove items outside of the forEach loop to avoid issues
-        itemsToRemove.forEach(graphic => {
-          graphicsLayer.remove(graphic);
-        });
-      }
-      
       if (routeGraphicsLayer) {
         routeGraphicsLayer.removeAll();
       }
       
-      // Load just the modules we need
+      // Make a direct route request with the ArcGIS API
+      try {
+        // Load required modules for routing
+        const [Graphic, esriRequest] = await loadModules([
+          "esri/Graphic",
+          "esri/request" 
+        ]);
+        
+        // Get coordinates
+        const startLng = userLocation[0];
+        const startLat = userLocation[1];
+        const endLng = parseFloat(destinationMarker.longitude);
+        const endLat = parseFloat(destinationMarker.latitude);
+        
+        console.log(`Calculating route from [${startLat},${startLng}] to [${endLat},${endLng}]`);
+        
+        // Direct request to the ArcGIS routing service
+        const routeUrl = "https://route-api.arcgis.com/arcgis/rest/services/World/Route/NAServer/Route_World/solve";
+        
+        const requestOptions = {
+          query: {
+            f: "json",
+            token: "AAPTxy8BH1VEsoebNVZXo8HurJoE9iZ23rcLOCKv4LGb2GWB9M7bDmsO8WzljuTlRGXy2NEKygbZEcMd4NYx-tHCiaqPjA9ONpdFDEffSKRJagdQr7A8hbXH0idSNA9UeafnN_wTxbonRF19Xdfrr5hzrmSsNdTQgqz0QYvTa9I4hPrd_kqlnIACRyteJaKtWhQqqnu1uwmw-NRYPsktPk-gRzfNv-09JB2MXLhU3DiEELI",
+            stops: `${startLng},${startLat};${endLng},${endLat}`,
+            returnDirections: true,
+            directionsLanguage: "vi", // Vietnamese
+            returnRoutes: true,
+            returnZ: false,
+            returnM: false
+          }
+        };
+        
+        // Make the request
+        const response = await esriRequest(routeUrl, requestOptions);
+        
+        // Check if we got a valid route
+        if (response.data && 
+            response.data.routes && 
+            response.data.routes.features && 
+            response.data.routes.features.length > 0) {
+          
+          // Get the route path from the response
+          const route = response.data.routes.features[0];
+          
+          // Create line symbols for the route
+          const outlineSymbol = {
+            type: "simple-line",
+            color: [255, 255, 255, 0.5], // White outline
+            width: 9,
+            style: "solid",
+            cap: "round",
+            join: "round"
+          };
+          
+          const lineSymbol = {
+            type: "simple-line",
+            color: [0, 132, 255, 0.8], // Blue line
+            width: 6,
+            style: "solid",
+            cap: "round",
+            join: "round"
+          };
+          
+          // Create graphics for the route
+          const outlineGraphic = new Graphic({
+            geometry: route.geometry,
+            symbol: outlineSymbol,
+            attributes: { type: "route-line-outline" }
+          });
+          
+          const lineGraphic = new Graphic({
+            geometry: route.geometry,
+            symbol: lineSymbol,
+            attributes: { type: "route-line" }
+          });
+          
+          // Add graphics to the map
+          routeGraphicsLayer.add(outlineGraphic);
+          routeGraphicsLayer.add(lineGraphic);
+          
+          // Get route info from the response
+          const routeAttribs = route.attributes;
+          const drivingDistance = routeAttribs.Total_Kilometers;
+          const drivingDuration = Math.round(routeAttribs.Total_Minutes);
+          
+          // Calculate walking time based on 5 km/h average walking speed
+          const walkingDuration = Math.round(drivingDistance / 5 * 60);
+          
+          // Create route info objects
+          const routeInfos: RouteInfo[] = [
+            {
+              name: "Xe máy / Ô tô",
+              distance: Math.round(drivingDistance * 10) / 10,
+              duration: drivingDuration
+            },
+            {
+              name: "Đi bộ",
+              distance: Math.round(drivingDistance * 10) / 10,
+              duration: walkingDuration
+            }
+          ];
+          
+          // Zoom to show the route
+          view.goTo(route.geometry.extent.expand(1.2), {
+            duration: 1000,
+            easing: "ease-out"
+          });
+          
+          // Notify parent component about routes
+          if (onRouteCalculated) {
+            onRouteCalculated(routeInfos);
+          }
+          
+          // Update state
+          setRouteResult(routeInfos);
+          
+        } else {
+          // Fallback to direct line if no route found
+          console.warn("No route found in response");
+          drawFallbackRoute(destinationMarker);
+        }
+        
+      } catch (error) {
+        console.error("Error calculating route with ArcGIS:", error);
+        drawFallbackRoute(destinationMarker);
+      }
+      
+    } catch (error) {
+      console.error("Error in main route calculation:", error);
+      drawFallbackRoute(destinationMarker);
+    } finally {
+      setIsCalculatingRoute(false);
+    }
+  };
+  
+  // Fallback route drawing (simple direct line)
+  const drawFallbackRoute = async (destinationMarker: ParkingLotMarker) => {
+    if (!userLocation || !view || !graphicsLayer) return;
+    
+    try {
       const [Graphic] = await loadModules(["esri/Graphic"]);
       
-      // Create a polyline for the route
+      // Get coordinates
       const startLng = userLocation[0];
       const startLat = userLocation[1];
       const endLng = parseFloat(destinationMarker.longitude);
       const endLat = parseFloat(destinationMarker.latitude);
       
-      console.log(`Drawing route from [${startLat},${startLng}] to [${endLat},${endLng}]`);
-      
-      // Create a visual path that mimics street grid navigation
-      // This makes it look like the route is following city streets with 90-degree turns
-      const pathPoints = createSimulatedStreetPath(
-        [startLng, startLat], 
-        [endLng, endLat], 
-        10 // Number of segments to create a more realistic looking path
-      );
-      
-      // Create the polyline geometry
-      const polylineJson = {
+      // Create a simple line geometry
+      const lineGeometry = {
         type: "polyline",
-        paths: [pathPoints]
+        paths: [[[startLng, startLat], [endLng, endLat]]]
       };
       
       // Create line symbols
       const outlineSymbol = {
         type: "simple-line",
-        color: [255, 255, 255, 0.5], // White outline
-        width: 9,
-        style: "solid",
-        cap: "round",
-        join: "round"
+        color: [255, 255, 255, 0.5],
+        width: 7,
+        style: "dash"
       };
       
       const lineSymbol = {
         type: "simple-line",
-        color: [0, 132, 255, 0.8], // Blue line
-        width: 6,
-        style: "solid",
-        cap: "round",
-        join: "round"
+        color: [0, 132, 255, 0.8],
+        width: 4,
+        style: "dash"
       };
       
-      // Create graphics for the route
+      // Create graphics
       const outlineGraphic = new Graphic({
-        geometry: polylineJson,
+        geometry: lineGeometry,
         symbol: outlineSymbol,
-        attributes: { type: 'route-line-outline' }
+        attributes: { type: "route-line-outline" }
       });
       
       const lineGraphic = new Graphic({
-        geometry: polylineJson,
+        geometry: lineGeometry,
         symbol: lineSymbol,
-        attributes: { type: 'route-line' }
+        attributes: { type: "route-line" }
       });
       
-      // Add to the appropriate layer
+      // Add to the route layer
       if (routeGraphicsLayer) {
         routeGraphicsLayer.add(outlineGraphic);
         routeGraphicsLayer.add(lineGraphic);
-      } else {
-        graphicsLayer.add(outlineGraphic);
-        graphicsLayer.add(lineGraphic);
       }
       
-      // Calculate approximate distance using Haversine formula
-      const distance = calculateHaversineDistance(
-        startLat, startLng, 
-        endLat, endLng
-      );
+      // Calculate approximate distance and times
+      const R = 6371; // Earth's radius in km
+      const dLat = (endLat - startLat) * Math.PI / 180;
+      const dLon = (endLng - startLng) * Math.PI / 180;
+      const a = 
+        Math.sin(dLat/2) * Math.sin(dLat/2) +
+        Math.cos(startLat * Math.PI / 180) * Math.cos(endLat * Math.PI / 180) * 
+        Math.sin(dLon/2) * Math.sin(dLon/2); 
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
+      const distance = R * c;
       
-      // Estimate durations
-      const drivingSpeed = 30; // km/h
-      const walkingSpeed = 5; // km/h
-      const drivingDuration = Math.round(distance / drivingSpeed * 60); // minutes
-      const walkingDuration = Math.round(distance / walkingSpeed * 60); // minutes
+      // Calculate estimated times
+      const drivingDuration = Math.round(distance / 30 * 60);
+      const walkingDuration = Math.round(distance / 5 * 60);
       
-      // Create route info
       const routeInfos: RouteInfo[] = [
         {
-          name: "Driving",
+          name: "Xe máy / Ô tô (ước tính)",
           distance: Math.round(distance * 10) / 10,
           duration: drivingDuration
         },
         {
-          name: "Walking",
+          name: "Đi bộ (ước tính)",
           distance: Math.round(distance * 10) / 10,
           duration: walkingDuration
         }
       ];
       
-      // Zoom to show the route
+      // Zoom to show both points
       const extent = {
-        xmin: Math.min(...pathPoints.map(p => p[0])) - 0.001,
-        ymin: Math.min(...pathPoints.map(p => p[1])) - 0.001,
-        xmax: Math.max(...pathPoints.map(p => p[0])) + 0.001,
-        ymax: Math.max(...pathPoints.map(p => p[1])) + 0.001,
+        xmin: Math.min(startLng, endLng) - 0.001,
+        ymin: Math.min(startLat, endLat) - 0.001,
+        xmax: Math.max(startLng, endLng) + 0.001,
+        ymax: Math.max(startLat, endLat) + 0.001,
         spatialReference: view.spatialReference
       };
       
@@ -504,307 +607,11 @@ export default function SimpleMap({
       setRouteResult(routeInfos);
       
     } catch (error) {
-      console.error("Error calculating route:", error);
-      // Fall back to a simple straight line if something goes wrong
-      drawSimpleLine(destinationMarker);
-    } finally {
-      setIsCalculatingRoute(false);
-    }
-  };
-  
-  // Helper function to create a more realistic path that follows a grid-like street pattern
-  const createSimulatedStreetPath = (start: [number, number], end: [number, number], numSegments: number): [number, number][] => {
-    const path: [number, number][] = [];
-    path.push(start); // Add starting point
-    
-    // Calculate direct vector from start to end
-    const dx = end[0] - start[0];
-    const dy = end[1] - start[1];
-    const distance = Math.sqrt(dx * dx + dy * dy);
-    
-    // Determine if we should use a multi-segment path (for longer distances)
-    // For very short distances, just use a direct path with slight curve
-    if (distance < 0.002) { // Very short distance
-      // Just add a slight curve
-      const midpoint: [number, number] = [
-        start[0] + dx * 0.5 + dy * 0.0008,
-        start[1] + dy * 0.5 - dx * 0.0008
-      ];
-      path.push(midpoint);
-      path.push(end);
-      return path;
-    }
-    
-    // For longer distances, simulate a street grid with perpendicular segments
-    
-    // First decide if we go horizontal first then vertical, or vertical first then horizontal
-    // This creates an L-shaped path that follows a more realistic street grid pattern
-    const goHorizontalFirst = Math.abs(dx) > Math.abs(dy);
-    
-    if (goHorizontalFirst) {
-      // First go mostly horizontal (keeping a bit of the vertical)
-      const horizontalPoint: [number, number] = [
-        end[0], 
-        start[1] + (dy * 0.2) // Keep a little bit of vertical movement
-      ];
-      
-      // Add some minor points along the first segment for a smoother curve
-      const firstSegPoints = 3;
-      for (let i = 1; i <= firstSegPoints; i++) {
-        const ratio = i / (firstSegPoints + 1);
-        const point: [number, number] = [
-          start[0] + (horizontalPoint[0] - start[0]) * ratio,
-          start[1] + (horizontalPoint[1] - start[1]) * ratio
-        ];
-        path.push(point);
-      }
-      
-      // Add the main corner point
-      path.push(horizontalPoint);
-      
-      // Now add points for the mostly vertical segment
-      const secondSegPoints = 3;
-      for (let i = 1; i <= secondSegPoints; i++) {
-        const ratio = i / (secondSegPoints + 1);
-        const point: [number, number] = [
-          horizontalPoint[0] + (end[0] - horizontalPoint[0]) * ratio,
-          horizontalPoint[1] + (end[1] - horizontalPoint[1]) * ratio
-        ];
-        path.push(point);
-      }
-    } else {
-      // First go mostly vertical (keeping a bit of the horizontal)
-      const verticalPoint: [number, number] = [
-        start[0] + (dx * 0.2), // Keep a little bit of horizontal movement
-        end[1]
-      ];
-      
-      // Add some minor points along the first segment for a smoother curve
-      const firstSegPoints = 3;
-      for (let i = 1; i <= firstSegPoints; i++) {
-        const ratio = i / (firstSegPoints + 1);
-        const point: [number, number] = [
-          start[0] + (verticalPoint[0] - start[0]) * ratio,
-          start[1] + (verticalPoint[1] - start[1]) * ratio
-        ];
-        path.push(point);
-      }
-      
-      // Add the main corner point
-      path.push(verticalPoint);
-      
-      // Now add points for the mostly horizontal segment
-      const secondSegPoints = 3;
-      for (let i = 1; i <= secondSegPoints; i++) {
-        const ratio = i / (secondSegPoints + 1);
-        const point: [number, number] = [
-          verticalPoint[0] + (end[0] - verticalPoint[0]) * ratio,
-          verticalPoint[1] + (end[1] - verticalPoint[1]) * ratio
-        ];
-        path.push(point);
-      }
-    }
-    
-    // Add ending point
-    path.push(end);
-    
-    return path;
-  };
-  
-  // Helper function to calculate Haversine distance (in km)
-  const calculateHaversineDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
-    const R = 6371; // Earth's radius in km
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLon = (lon2 - lon1) * Math.PI / 180;
-    const a = 
-      Math.sin(dLat/2) * Math.sin(dLat/2) +
-      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
-      Math.sin(dLon/2) * Math.sin(dLon/2); 
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
-    return R * c; // Distance in km
-  };
-  
-  // Simple fallback in case everything else fails
-  const drawSimpleLine = async (destinationMarker: ParkingLotMarker) => {
-    if (!userLocation || !graphicsLayer) return;
-    
-    try {
-      const [Graphic] = await loadModules(["esri/Graphic"]);
-      
-      // Create a straight line
-      const lineGeometry = {
-        type: "polyline",
-        paths: [[
-          userLocation[0], userLocation[1], 
-          parseFloat(destinationMarker.longitude), parseFloat(destinationMarker.latitude)
-        ]]
-      };
-      
-      // Create a simple line symbol
-      const lineSymbol = {
-        type: "simple-line",
-        color: [0, 132, 255, 0.8],
-        width: 4,
-        style: "dash"
-      };
-      
-      // Create a graphic for the route
-      const routeGraphic = new Graphic({
-        geometry: lineGeometry,
-        symbol: lineSymbol,
-        attributes: { type: 'route-line' }
-      });
-      
-      // Add to graphics layer
-      graphicsLayer.add(routeGraphic);
-      
-      // Calculate approximate distance
-      const startLat = userLocation[1];
-      const startLng = userLocation[0];
-      const endLat = parseFloat(destinationMarker.latitude);
-      const endLng = parseFloat(destinationMarker.longitude);
-      
-      const distance = calculateHaversineDistance(startLat, startLng, endLat, endLng);
-      
-      // Create route info
-      const drivingDuration = Math.round(distance / 30 * 60); // 30 km/h
-      const walkingDuration = Math.round(distance / 5 * 60); // 5 km/h
-      
-      const routeInfos: RouteInfo[] = [
-        {
-          name: "Driving",
-          distance: Math.round(distance * 10) / 10,
-          duration: drivingDuration
-        },
-        {
-          name: "Walking",
-          distance: Math.round(distance * 10) / 10,
-          duration: walkingDuration
-        }
-      ];
-      
-      // Notify parent component
-      if (onRouteCalculated) {
-        onRouteCalculated(routeInfos);
-      }
-      
-      setRouteResult(routeInfos);
-      
-    } catch (error) {
-      console.error("Error in simple line fallback:", error);
-    }
-  };
-  
-  // Fallback route drawing function (simple direct line)
-  const drawFallbackRoute = async (destinationMarker: ParkingLotMarker) => {
-    if (!userLocation || !view || !graphicsLayer) return;
-    
-    try {
-      // Load necessary modules
-      const [Graphic] = await loadModules(["esri/Graphic"]);
-      
-      // Create a simple line geometry
-      const lineGeometry = {
-        type: "polyline",
-        paths: [[userLocation[0], userLocation[1]], 
-                [parseFloat(destinationMarker.longitude), parseFloat(destinationMarker.latitude)]]
-      };
-      
-      // Create symbols
-      const outlineSymbol = {
-        type: "simple-line",
-        color: [255, 255, 255, 0.5], // White outline
-        width: 9,
-        style: "solid",
-        cap: "round",
-        join: "round"
-      };
-      
-      const lineSymbol = {
-        type: "simple-line",
-        color: [0, 132, 255, 0.8], // Blue line
-        width: 6,
-        style: "dash",  // Dashed to indicate it's an approximate route
-        cap: "round",
-        join: "round"
-      };
-      
-      // Create graphics
-      const outlineGraphic = new Graphic({
-        geometry: lineGeometry,
-        symbol: outlineSymbol,
-        attributes: { type: 'route-line-outline' }
-      });
-      
-      const lineGraphic = new Graphic({
-        geometry: lineGeometry,
-        symbol: lineSymbol,
-        attributes: { type: 'route-line' }
-      });
-      
-      // Add to graphics layer
-      graphicsLayer.add(outlineGraphic);
-      graphicsLayer.add(lineGraphic);
-      
-      // Calculate approximate distance and duration
-      // Calculate distance using Haversine formula for more accuracy
-      const destLng = parseFloat(destinationMarker.longitude);
-      const destLat = parseFloat(destinationMarker.latitude);
-      const R = 6371; // Radius of the Earth in km
-      const dLat = (destLat - userLocation[1]) * Math.PI / 180;
-      const dLon = (destLng - userLocation[0]) * Math.PI / 180;
-      const a = 
-        Math.sin(dLat/2) * Math.sin(dLat/2) +
-        Math.cos(userLocation[1] * Math.PI / 180) * Math.cos(destLat * Math.PI / 180) * 
-        Math.sin(dLon/2) * Math.sin(dLon/2); 
-      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
-      const distance = R * c;
-      
-      // Estimate durations
-      const drivingDuration = Math.round(distance / 30 * 60); // 30 km/h average
-      const walkingDuration = Math.round(distance / 5 * 60);  // 5 km/h average
-      
-      const routeInfos: RouteInfo[] = [
-        {
-          name: "Driving (estimated)",
-          distance: Math.round(distance * 10) / 10,
-          duration: drivingDuration
-        },
-        {
-          name: "Walking (estimated)",
-          distance: Math.round(distance * 10) / 10,
-          duration: walkingDuration
-        }
-      ];
-      
-      // Zoom to show both points
-      const extent = {
-        xmin: Math.min(userLocation[0], destLng),
-        ymin: Math.min(userLocation[1], destLat),
-        xmax: Math.max(userLocation[0], destLng),
-        ymax: Math.max(userLocation[1], destLat),
-        spatialReference: view.spatialReference
-      };
-      
-      view.goTo(extent, {
-        duration: 1000,
-        easing: "ease-out"
-      }).catch(err => console.warn('Map navigation error:', err));
-      
-      // Notify parent component
-      if (onRouteCalculated) {
-        onRouteCalculated(routeInfos);
-      }
-      
-      // Update internal state
-      setRouteResult(routeInfos);
-      
-    } catch (error) {
       console.error("Error in fallback route:", error);
     }
   };
   
-  // Method to calculate route to selected marker (exposed for external use)
+  // Method to calculate route to selected marker
   const navigateToSelectedMarker = () => {
     if (!selectedMarkerId || !userLocation) return;
     
@@ -814,10 +621,9 @@ export default function SimpleMap({
     }
   };
   
-  // Expose the navigation method
-  // This makes it possible to call navigateToSelectedMarker from outside this component
-  if (window) {
-    // @ts-ignore - Add to window object for access from other components
+  // Expose the navigation method to the window object for external access
+  if (typeof window !== 'undefined') {
+    // @ts-ignore
     window.navigateToSelectedMarker = navigateToSelectedMarker;
   }
 
@@ -860,7 +666,7 @@ export default function SimpleMap({
             className="h-10 w-10 rounded-full bg-blue-600 text-white hover:bg-blue-700 shadow-lg" 
             onClick={navigateToSelectedMarker}
             disabled={isCalculatingRoute}
-            title="Navigate to this parking lot"
+            title="Tìm đường"
           >
             <Navigation className="h-5 w-5" />
           </Button>
@@ -872,7 +678,7 @@ export default function SimpleMap({
         <div className="absolute bottom-4 left-4 z-10 bg-white p-2 rounded-md shadow-md">
           <div className="flex items-center space-x-2">
             <div className="animate-spin h-4 w-4 border-t-2 border-blue-500"></div>
-            <span className="text-sm">Calculating route...</span>
+            <span className="text-sm">Đang tính toán tuyến đường...</span>
           </div>
         </div>
       )}
