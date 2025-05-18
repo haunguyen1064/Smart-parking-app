@@ -167,11 +167,11 @@ export default function Home() {
   };
   
   return (
-    <div className="h-screen overflow-hidden relative">
-      <Navbar />
+    <div className="w-screen h-screen overflow-hidden relative">
+      <Navbar className="absolute top-0 left-0 right-0 z-20 bg-white bg-opacity-90" />
       
       {/* Full-screen map */}
-      <main className="h-[calc(100vh-64px)] w-full overflow-hidden">
+      <main className="h-screen w-screen overflow-hidden absolute inset-0">
         <SimpleMap
           markers={parkingLotMarkers}
           onMarkerClick={handleMarkerClick}
