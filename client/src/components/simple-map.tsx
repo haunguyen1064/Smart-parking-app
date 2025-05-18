@@ -381,44 +381,112 @@ export default function SimpleMap({
           latitude: parseFloat(destinationMarker.latitude)
         });
         
-        // Clear any previous route graphics from the layer
+        // Clear any previous route graphics from all layers
         if (graphicsLayer) {
-          // Find and remove any previous route lines
+          // Find and remove any previous route-related graphics
+          const itemsToRemove = [];
           graphicsLayer.graphics.items.forEach((graphic: any) => {
-            if (graphic.attributes && graphic.attributes.type === 'route-line') {
-              graphicsLayer.remove(graphic);
+            if (graphic.attributes && 
+               (graphic.attributes.type === 'route-line' || 
+                graphic.attributes.type === 'route-arrow')) {
+              itemsToRemove.push(graphic);
             }
+          });
+          
+          // Remove the items outside of the forEach to avoid issues
+          itemsToRemove.forEach(graphic => {
+            graphicsLayer.remove(graphic);
           });
         }
         
-        // Create a polyline geometry for the route
+        // Also clear the route graphics layer if it exists
+        if (routeGraphicsLayer) {
+          routeGraphicsLayer.removeAll();
+        }
+        
+        // Create a more realistic curved path with intermediate points
+        // This helps make the route look more like what you'd see in Google Maps
+        const startLng = userLocation[0];
+        const startLat = userLocation[1];
+        const endLng = parseFloat(destinationMarker.longitude);
+        const endLat = parseFloat(destinationMarker.latitude);
+        
+        // Generate a path with multiple points along a slightly curved route
+        const paths = [];
+        const numPoints = 15; // More points for a smoother curve
+        
+        for (let i = 0; i <= numPoints; i++) {
+          const t = i / numPoints;
+          // Linear interpolation for basic path
+          let lng = startLng + t * (endLng - startLng);
+          let lat = startLat + t * (endLat - startLat);
+          
+          // Add slight curve using sine function (if not a very short route)
+          const dist = Math.sqrt(Math.pow(endLng - startLng, 2) + Math.pow(endLat - startLat, 2));
+          if (dist > 0.01) { // Only add curve for longer routes
+            // Calculate perpendicular offset (normal to the direct path)
+            const perpFactor = Math.sin(t * Math.PI) * 0.005; // Controls curve amount
+            const dirX = endLat - startLat;
+            const dirY = -(endLng - startLng);
+            const mag = Math.sqrt(dirX * dirX + dirY * dirY);
+            if (mag > 0) {
+              // Apply perpendicular offset
+              lng += (dirY / mag) * perpFactor;
+              lat += (dirX / mag) * perpFactor;
+            }
+          }
+          
+          paths.push([lng, lat]);
+        }
+        
+        // Create the polyline with the curved path
         const polylineJson = {
           type: "polyline",
-          paths: [
-            [userLocation[0], userLocation[1]],
-            [parseFloat(destinationMarker.longitude), parseFloat(destinationMarker.latitude)]
-          ]
+          paths: [paths]
         };
         
-        // Create a line symbol for the route
+        // Create a more visually appealing line symbol for the route 
+        // with a Google Maps style appearance
         const lineSymbol = {
           type: "simple-line",
-          color: [0, 123, 255, 0.8],
-          width: 5,
+          color: [0, 132, 255, 0.8], // Bright blue color similar to Google Maps
+          width: 6,
           style: "solid",
           cap: "round",
           join: "round"
         };
         
-        // Create a graphic for the route line
+        // Also create a secondary route outline for better visibility
+        const outlineSymbol = {
+          type: "simple-line",
+          color: [255, 255, 255, 0.5], // White outline
+          width: 9,
+          style: "solid",
+          cap: "round",
+          join: "round"
+        };
+        
+        // First create and add the white outline for the route (drawn underneath)
+        const routeOutlineGraphic = new Graphic({
+          geometry: polylineJson,
+          symbol: outlineSymbol,
+          attributes: { type: 'route-line-outline' }
+        });
+        
+        // Then create the main blue route line
         const routeGraphic = new Graphic({
           geometry: polylineJson,
           symbol: lineSymbol,
           attributes: { type: 'route-line' }
         });
         
-        // Add the route graphic to the map
-        if (graphicsLayer) {
+        // Add both graphics to the map - outline first so it appears underneath
+        if (routeGraphicsLayer) {
+          routeGraphicsLayer.add(routeOutlineGraphic);
+          routeGraphicsLayer.add(routeGraphic);
+        } else if (graphicsLayer) {
+          // Fallback to the main graphics layer if route layer is not available
+          graphicsLayer.add(routeOutlineGraphic);
           graphicsLayer.add(routeGraphic);
         }
         
