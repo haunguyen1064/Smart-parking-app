@@ -74,10 +74,7 @@ export default function Home() {
     }
   };
   
-  // Reference to the map component
-  const mapRef = useRef<any>(null);
-  
-  // Handle navigation request - direct navigation without requiring second click
+  // Handle navigation request - direct navigation using the global method
   const handleNavigate = () => {
     if (!selectedParkingLot) return;
     
@@ -92,9 +89,11 @@ export default function Home() {
       navigator.geolocation.getCurrentPosition(
         (position) => {
           // Position obtained successfully
-          // Call the map's navigation function directly
-          if (mapRef.current && typeof mapRef.current.navigateToSelectedMarker === 'function') {
-            mapRef.current.navigateToSelectedMarker();
+          // Use the global method we exposed from SimpleMap
+          // @ts-ignore - Access the method we attached to window
+          if (window.navigateToSelectedMarker && typeof window.navigateToSelectedMarker === 'function') {
+            // @ts-ignore
+            window.navigateToSelectedMarker();
           } else {
             toast({
               title: "Không thể tính toán tuyến đường",

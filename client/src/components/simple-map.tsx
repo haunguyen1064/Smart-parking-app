@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useImperativeHandle, forwardRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Plus, Minus, Navigation } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { loadModules, loadCss } from "esri-loader";
@@ -216,142 +216,137 @@ export default function SimpleMap({
     
     const updateMarkers = async () => {
       try {
-        // Load required modules
-        const [Point, Graphic] = await loadModules([
-          "esri/geometry/Point",
-          "esri/Graphic"
+        const [Graphic, Point] = await loadModules([
+          "esri/Graphic",
+          "esri/geometry/Point"
         ]);
         
-        // Clear existing markers
-        graphicsLayer.removeAll();
-        
-        // Add markers
-        markers.forEach(marker => {
-          try {
-            const longitude = parseFloat(marker.longitude);
-            const latitude = parseFloat(marker.latitude);
-            
-            if (isNaN(longitude) || isNaN(latitude)) {
-              console.warn(`Invalid coordinates for marker ${marker.id}`);
-              return;
-            }
-            
-            // Create marker point
-            const point = new Point({
-              longitude: longitude,
-              latitude: latitude
-            });
-            
-            // Style based on selection and availability
-            const isSelected = marker.id === selectedMarkerId;
-            const color = isSelected ? "#FF5733" : 
-                         marker.availableSpots > 0 ? "#3B82F6" : "#9CA3AF";
-            const size = isSelected ? 18 : 12;
-            
-            // Create marker symbol
-            const markerSymbol = {
-              type: "simple-marker",
-              color: color,
-              size: size,
-              outline: {
-                color: [255, 255, 255],
-                width: 2
-              }
-            };
-            
-            // Create graphic
-            const graphic = new Graphic({
-              geometry: point,
-              symbol: markerSymbol,
-              attributes: {
-                id: marker.id,
-                name: marker.name,
-                availableSpots: marker.availableSpots,
-                totalSpots: marker.totalSpots
-              }
-            });
-            
-            // Add to layer
-            graphicsLayer.add(graphic);
-          } catch (err) {
-            console.error(`Error adding marker ${marker.id}:`, err);
+        // Clear existing markers (excluding user location)
+        graphicsLayer.graphics.forEach((graphic: any) => {
+          if (graphic.attributes && graphic.attributes.type !== 'user-location') {
+            graphicsLayer.remove(graphic);
           }
         });
+        
+        // Add markers for each parking lot
+        markers.forEach(marker => {
+          // Create point
+          const point = new Point({
+            longitude: parseFloat(marker.longitude),
+            latitude: parseFloat(marker.latitude)
+          });
+          
+          // Create symbol based on selection state
+          const markerSymbol = {
+            type: "simple-marker",
+            color: marker.isSelected ? [255, 0, 0] : [68, 50, 183], // Red if selected, purple otherwise
+            outline: {
+              color: [255, 255, 255],
+              width: 2
+            },
+            size: marker.isSelected ? 14 : 10 // Larger if selected
+          };
+          
+          // Create graphics for markers
+          const markerGraphic = new Graphic({
+            geometry: point,
+            symbol: markerSymbol,
+            attributes: {
+              id: marker.id,
+              name: marker.name,
+              availableSpots: marker.availableSpots,
+              totalSpots: marker.totalSpots,
+              type: 'parking-marker'
+            }
+          });
+          
+          // Create text symbol for marker label
+          const textSymbol = {
+            type: "text",
+            color: "black",
+            haloColor: "white",
+            haloSize: 1,
+            text: marker.name,
+            yoffset: -20,
+            font: {
+              size: 10,
+              family: "sans-serif"
+            }
+          };
+          
+          // Create graphic for text label
+          const textGraphic = new Graphic({
+            geometry: point,
+            symbol: textSymbol
+          });
+          
+          // Add graphics to layer
+          graphicsLayer.add(markerGraphic);
+          graphicsLayer.add(textGraphic);
+        });
+        
+        // Handle marker click events
+        if (clickHandler) {
+          clickHandler.remove();
+        }
+        
+        const handler = view.on("click", (event: any) => {
+          // Perform a hitTest to check if a marker was clicked
+          view.hitTest(event).then((response: any) => {
+            // Filter to only get graphics with the parking-marker type
+            const markerResults = response.results?.filter(
+              (result: any) => 
+                result.graphic.attributes && 
+                result.graphic.attributes.type === 'parking-marker'
+            );
+            
+            if (markerResults && markerResults.length > 0) {
+              const clickedMarker = markerResults[0].graphic.attributes;
+              
+              // Find the marker in our array to pass complete data
+              const marker = markers.find(m => m.id === clickedMarker.id);
+              if (marker) {
+                onMarkerClick(marker);
+              }
+            }
+          });
+        });
+        
+        setClickHandler(handler);
+        
+        // If a marker is selected, center on it
+        if (selectedMarkerId) {
+          const selectedMarker = markers.find(marker => marker.id === selectedMarkerId);
+          if (selectedMarker) {
+            view.goTo({
+              center: [parseFloat(selectedMarker.longitude), parseFloat(selectedMarker.latitude)],
+              zoom: 17
+            }, {
+              duration: 1000,
+              easing: "ease-out"
+            });
+          }
+        }
+        
       } catch (error) {
         console.error("Error updating markers:", error);
       }
     };
     
     updateMarkers();
-  }, [markers, selectedMarkerId, isLoading, graphicsLayer, view]);
+  }, [markers, isLoading, graphicsLayer, view, selectedMarkerId, onMarkerClick]);
   
-  // Add click handler
-  useEffect(() => {
-    if (isLoading || !view || !markers.length) return;
-    
-    // Remove existing handler
-    if (clickHandler) {
-      clickHandler.remove();
-    }
-    
-    // Add new handler
-    const handler = view.on("click", (event: any) => {
-      view.hitTest(event).then((response: any) => {
-        // Check if a marker was clicked
-        const result = response.results?.find((result: any) => 
-          result.graphic?.attributes?.id !== undefined
-        );
-        
-        if (result) {
-          const markerID = result.graphic.attributes.id;
-          const marker = markers.find(m => m.id === markerID);
-          
-          if (marker) {
-            onMarkerClick(marker);
-          }
-        }
-      });
-    });
-    
-    setClickHandler(handler);
-    
-    return () => {
-      handler.remove();
-    };
-  }, [isLoading, view, markers, onMarkerClick]);
-  
-  // Center map on selected marker
-  useEffect(() => {
-    if (isLoading || !view || !selectedMarkerId) return;
-    
-    const selectedMarker = markers.find(marker => marker.id === selectedMarkerId);
-    
-    if (selectedMarker) {
-      const longitude = parseFloat(selectedMarker.longitude);
-      const latitude = parseFloat(selectedMarker.latitude);
-      
-      if (!isNaN(longitude) && !isNaN(latitude)) {
-        view.goTo({
-          center: [longitude, latitude],
-          zoom: 15
-        }, {
-          duration: 500
-        });
-      }
-    }
-  }, [selectedMarkerId, markers, isLoading, view]);
-  
-  // Zoom controls
+  // Handle zoom controls
   const handleZoomIn = () => {
     if (view) {
-      const newZoom = Math.min(view.zoom + 1, 18);
+      const newZoom = view.zoom + 1;
       view.goTo({ zoom: newZoom }, { duration: 200 });
     }
   };
   
   const handleZoomOut = () => {
     if (view) {
-      const newZoom = Math.max(view.zoom - 1, 5);
+      const newZoom = view.zoom - 1;
       view.goTo({ zoom: newZoom }, { duration: 200 });
     }
   };
@@ -552,7 +547,7 @@ export default function SimpleMap({
     }
   };
   
-  // Method to calculate route to selected marker
+  // Method to calculate route to selected marker (exposed for external use)
   const navigateToSelectedMarker = () => {
     if (!selectedMarkerId || !userLocation) return;
     
@@ -561,6 +556,13 @@ export default function SimpleMap({
       calculateRoute(selectedMarker);
     }
   };
+  
+  // Expose the navigation method
+  // This makes it possible to call navigateToSelectedMarker from outside this component
+  if (window) {
+    // @ts-ignore - Add to window object for access from other components
+    window.navigateToSelectedMarker = navigateToSelectedMarker;
+  }
 
   return (
     <div className="w-full md:w-3/5 h-[50vh] md:h-[calc(100vh-56px)] relative bg-gray-100">
