@@ -39,10 +39,10 @@ export default function ParkingLayoutModal({
   onConfirm,
 }: ParkingLayoutModalProps) {
   // Layout name
-  const [layoutName, setLayoutName] = useState<string>("Khu A");
+  const [layoutName, setLayoutName] = useState<string>("");
   
   // Number of rows
-  const [rowCount, setRowCount] = useState<number>(5);
+  const [rowCount, setRowCount] = useState<number>(1);
   
   // Selected row for editing
   const [selectedRowIndex, setSelectedRowIndex] = useState<number>(0);
@@ -132,7 +132,7 @@ export default function ParkingLayoutModal({
               id="layout-name"
               value={layoutName}
               onChange={(e) => setLayoutName(e.target.value)}
-              placeholder="Tên khu vực (VD: Khu A)"
+              placeholder="Nhập tên khu vực (VD: Khu A, Zone B)"
             />
           </div>
           
@@ -146,6 +146,7 @@ export default function ParkingLayoutModal({
               max={10}
               value={rowCount}
               onChange={(e) => setRowCount(Math.max(1, parseInt(e.target.value) || 1))}
+              placeholder="Nhập số hàng (1-10)"
             />
           </div>
           
@@ -179,7 +180,7 @@ export default function ParkingLayoutModal({
                   type="number"
                   min={1}
                   max={20}
-                  placeholder="Số chỗ"
+                  placeholder="Nhập số chỗ đỗ (1-20)"
                   value={rowConfigs[selectedRowIndex]?.slotCount || 0}
                   onChange={(e) => handleSlotCountChange(parseInt(e.target.value) || 0)}
                 />
@@ -188,10 +189,10 @@ export default function ParkingLayoutModal({
               {/* Prefix */}
               <div>
                 <Input
-                  placeholder="Ký hiệu"
+                  placeholder="Nhập ký hiệu (A-Z,1-9)"
                   value={rowConfigs[selectedRowIndex]?.prefix || ""}
                   onChange={(e) => handlePrefixChange(e.target.value)}
-                  maxLength={1}
+                  maxLength={3}
                 />
               </div>
             </div>
