@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import SearchPanel from "./search-panel";
-import ParkingDetail from "./parking-detail-updated";
+import ParkingDetail from "./parking-detail";
 import BookingPanel from "./booking-panel";
 import HomePanel from "./home-panel";
 import RegisterParkingLotPanel from "./register-parking-lot-panel";
