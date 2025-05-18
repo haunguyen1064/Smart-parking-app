@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { MapPin, Car, ArrowLeft, Calendar, Clock } from "lucide-react";
+import { MapPin, Car, ArrowLeft, Calendar, Clock, Plus } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import ParkingSpotsLayout from "./parking-spots-layout";
 import { ParkingLot, ParkingSpace } from "@/hooks/use-parking";
-import { addHours, format, parseISO } from "date-fns";
+import { addDays, addHours, addMonths, differenceInDays, format, parseISO } from "date-fns";
 
 type BookingPanelProps = {
   parkingLot: ParkingLot;
@@ -29,6 +29,7 @@ export default function BookingPanel({
   isBookingLoading,
   onBack,
 }: BookingPanelProps) {
+  // Booking by hour states
   const [bookingDuration, setBookingDuration] = useState<number>(1);
   const [startDate, setStartDate] = useState<string>(
     format(new Date(), "yyyy-MM-dd")
@@ -36,6 +37,12 @@ export default function BookingPanel({
   const [startTime, setStartTime] = useState<string>(
     format(new Date(), "HH:mm")
   );
+  
+  // Booking by day states
+  const [selectedDates, setSelectedDates] = useState<string[]>([
+    format(new Date(), "dd/MM/yyyy"),
+    format(addDays(new Date(), 1), "dd/MM/yyyy"),
+  ]);
   
   // Group parking spaces by zone
   const groupedSpaces = parkingSpaces.reduce((groups, space) => {
@@ -54,20 +61,69 @@ export default function BookingPanel({
     }
   };
   
+  // Add a date to selectedDates
+  const handleAddDate = () => {
+    // Add a new date (current date + length of current dates array)
+    const newDate = format(
+      addDays(new Date(), selectedDates.length),
+      "dd/MM/yyyy"
+    );
+    setSelectedDates([...selectedDates, newDate]);
+  };
+  
+  // Remove a date from selectedDates
+  const handleRemoveDate = (dateToRemove: string) => {
+    setSelectedDates(selectedDates.filter(date => date !== dateToRemove));
+  };
+  
+  // Track the current booking mode
+  const [activeTab, setActiveTab] = useState<"hour" | "day" | "month">("hour");
+  
+  // Create booking based on active tab
   const handleCreateBooking = async () => {
     if (!selectedParkingSpace) {
-      alert("Please select a parking space");
+      alert("Vui lòng chọn một vị trí đỗ xe");
       return;
     }
     
-    // Parse start time
-    const startDateTime = new Date(`${startDate}T${startTime}`);
+    let startDateTime: Date;
+    let endDateTime: Date;
+    let totalPrice: number;
     
-    // Calculate end time based on duration
-    const endDateTime = addHours(startDateTime, bookingDuration);
-    
-    // Calculate total price
-    const totalPrice = parkingLot.pricePerHour * bookingDuration;
+    if (activeTab === "hour") {
+      // Parse start time for hourly booking
+      startDateTime = new Date(`${startDate}T${startTime}`);
+      
+      // Calculate end time based on hour duration
+      endDateTime = addHours(startDateTime, bookingDuration);
+      
+      // Calculate total price for hours
+      totalPrice = parkingLot.pricePerHour * bookingDuration;
+    } 
+    else if (bookingMode === "day") {
+      // For day booking, use the first selected date as start
+      // and the last selected date + 1 as end
+      const firstDate = selectedDates[0];
+      const lastDate = selectedDates[selectedDates.length - 1];
+      
+      // Parse the date strings (format: dd/MM/yyyy)
+      const [firstDay, firstMonth, firstYear] = firstDate.split('/').map(Number);
+      startDateTime = new Date(firstYear, firstMonth - 1, firstDay, 0, 0, 0);
+      
+      const [lastDay, lastMonth, lastYear] = lastDate.split('/').map(Number);
+      // End time is the end of the last selected day
+      endDateTime = new Date(lastYear, lastMonth - 1, lastDay, 23, 59, 59);
+      
+      // Calculate number of days for pricing
+      const daysDifference = differenceInDays(endDateTime, startDateTime) + 1;
+      
+      // Calculate price (assuming daily price is 8 hours of hourly price)
+      totalPrice = parkingLot.pricePerHour * 8 * daysDifference;
+    }
+    else {
+      // Month booking - not implemented yet
+      return;
+    }
     
     // Create booking
     await onCreateBooking({
@@ -181,9 +237,53 @@ export default function BookingPanel({
             </div>
           </TabsContent>
           
-          <TabsContent value="day">
-            <div className="bg-gray-100 p-6 rounded-md text-center text-gray-500">
-              Chức năng đặt theo ngày sẽ được cập nhật sau
+          <TabsContent value="day" className="space-y-4">
+            <div className="space-y-3">
+              {selectedDates.map((date, index) => (
+                <div key={index} className="relative">
+                  <Input 
+                    value={date} 
+                    readOnly 
+                    className="pr-10"
+                  />
+                  {selectedDates.length > 1 && (
+                    <button 
+                      className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                      onClick={() => handleRemoveDate(date)}
+                    >
+                      ×
+                    </button>
+                  )}
+                </div>
+              ))}
+              
+              <Button 
+                variant="outline" 
+                className="w-full flex items-center justify-center gap-2"
+                onClick={handleAddDate}
+              >
+                <Plus size={16} />
+                <span>Thêm ngày</span>
+              </Button>
+            </div>
+            
+            <div className="bg-blue-50 p-3 rounded-md">
+              <div className="flex justify-between">
+                <div className="flex items-center">
+                  <Calendar className="h-4 w-4 mr-2 text-gray-600" />
+                  <span className="text-sm font-medium">Tổng ngày:</span>
+                </div>
+                <span className="font-medium">{selectedDates.length} ngày</span>
+              </div>
+              <div className="flex justify-between mt-2">
+                <div className="flex items-center">
+                  <Calendar className="h-4 w-4 mr-2 text-gray-600" />
+                  <span className="text-sm font-medium">Tổng tiền:</span>
+                </div>
+                <span className="font-medium text-primary">
+                  {(parkingLot.pricePerHour * 8 * selectedDates.length).toLocaleString('vi-VN')}đ
+                </span>
+              </div>
             </div>
           </TabsContent>
           
