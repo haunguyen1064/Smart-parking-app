@@ -48,12 +48,11 @@ export default function RegisterParkingLotPanel({ onBack }: RegisterParkingLotPa
             variant="ghost" 
             size="sm" 
             onClick={onBack}
-            className="flex items-center text-gray-600 mr-2"
+            className="flex items-center justify-center text-gray-600 w-8 h-8 p-0 mr-2"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1 h-4 w-4">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
               <path d="m15 18-6-6 6-6"/>
             </svg>
-            Quay lại
           </Button>
           <h2 className="text-lg font-semibold">Thông tin bãi đỗ xe</h2>
         </div>
@@ -64,7 +63,7 @@ export default function RegisterParkingLotPanel({ onBack }: RegisterParkingLotPa
           {/* Parking Lot Name */}
           <div>
             <Label htmlFor="name">Tên bãi đỗ xe</Label>
-            <Input id="name" placeholder="Thành Công" required />
+            <Input id="name" placeholder="Nhập tên bãi đỗ xe" required />
           </div>
           
           {/* Vehicle Type */}
@@ -132,7 +131,7 @@ export default function RegisterParkingLotPanel({ onBack }: RegisterParkingLotPa
           {/* Capacity */}
           <div>
             <Label htmlFor="capacity">Sức chứa</Label>
-            <Input id="capacity" type="number" placeholder="45" required />
+            <Input id="capacity" type="number" placeholder="Nhập số lượng chỗ đỗ xe" required />
           </div>
           
           {/* Location */}
@@ -175,7 +174,7 @@ export default function RegisterParkingLotPanel({ onBack }: RegisterParkingLotPa
               </Select>
             </div>
             
-            <Input placeholder="426 Nguyễn Văn Khối" required />
+            <Input placeholder="Nhập số nhà, tên đường" required />
             
             <div className="flex items-center mt-2">
               <Checkbox 
@@ -225,8 +224,8 @@ export default function RegisterParkingLotPanel({ onBack }: RegisterParkingLotPa
           </div>
           
           {/* Submit Button */}
-          <div className="flex justify-end mt-6">
-            <Button type="submit" className="bg-indigo-500 hover:bg-indigo-600 text-white">
+          <div className="mt-6">
+            <Button type="submit" className="bg-indigo-500 hover:bg-indigo-600 text-white w-full">
               Đăng ký
             </Button>
           </div>
