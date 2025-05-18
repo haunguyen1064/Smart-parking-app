@@ -93,7 +93,7 @@ export default function ContentPanel({
   };
 
   return (
-    <div className="w-full md:w-2/5 bg-white overflow-y-auto" id="content-panel">
+    <div className="w-full md:w-2/5 bg-white h-full overflow-hidden" id="content-panel">
       {/* Home Panel */}
       <div className={activePanel !== "home" ? "hidden" : ""}>
         <HomePanel 

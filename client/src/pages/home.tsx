@@ -167,12 +167,12 @@ export default function Home() {
   };
   
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="flex flex-col h-screen overflow-hidden">
       <Navbar />
       
       {/* We don't need the buttons overlay anymore as they are now in the HomePanel */}
       
-      <main className="flex-grow flex flex-col md:flex-row h-full">
+      <main className="flex-grow flex flex-col md:flex-row overflow-hidden">
         <SimpleMap
           markers={parkingLotMarkers}
           onMarkerClick={handleMarkerClick}

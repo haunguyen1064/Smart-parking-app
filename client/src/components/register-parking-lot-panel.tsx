@@ -41,8 +41,8 @@ export default function RegisterParkingLotPanel({ onBack }: RegisterParkingLotPa
   };
   
   return (
-    <div className="w-full h-full flex flex-col bg-white overflow-y-auto">
-      <div className="p-4 border-b">
+    <div className="w-full h-full flex flex-col bg-white">
+      <div className="p-4 border-b flex-shrink-0">
         <div className="flex items-center">
           <Button 
             variant="ghost" 
@@ -58,7 +58,7 @@ export default function RegisterParkingLotPanel({ onBack }: RegisterParkingLotPa
         </div>
       </div>
       
-      <div className="p-4 overflow-y-auto">
+      <div className="p-4 overflow-y-auto flex-grow">
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Parking Lot Name */}
           <div>
