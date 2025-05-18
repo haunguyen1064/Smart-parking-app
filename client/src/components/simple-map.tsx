@@ -400,12 +400,12 @@ export default function SimpleMap({
       
       console.log(`Drawing route from [${startLat},${startLng}] to [${endLat},${endLng}]`);
       
-      // Create a visual serpentine path that mimics street navigation
-      // This is a simplified approach that creates a route that visually follows a more realistic path
+      // Create a visual path that mimics street grid navigation
+      // This makes it look like the route is following city streets with 90-degree turns
       const pathPoints = createSimulatedStreetPath(
         [startLng, startLat], 
         [endLng, endLat], 
-        5 // Number of waypoints to create a more realistic looking path
+        10 // Number of segments to create a more realistic looking path
       );
       
       // Create the polyline geometry
@@ -512,41 +512,102 @@ export default function SimpleMap({
     }
   };
   
-  // Helper function to create a more realistic path
-  const createSimulatedStreetPath = (start: [number, number], end: [number, number], numPoints: number): [number, number][] => {
+  // Helper function to create a more realistic path that follows a grid-like street pattern
+  const createSimulatedStreetPath = (start: [number, number], end: [number, number], numSegments: number): [number, number][] => {
     const path: [number, number][] = [];
     path.push(start); // Add starting point
     
     // Calculate direct vector from start to end
     const dx = end[0] - start[0];
     const dy = end[1] - start[1];
+    const distance = Math.sqrt(dx * dx + dy * dy);
     
-    // Add intermediate points with some randomness to simulate street grid
-    for (let i = 1; i < numPoints; i++) {
-      const ratio = i / numPoints;
-      
-      // Base position along the direct path
-      let x = start[0] + dx * ratio;
-      let y = start[1] + dy * ratio;
-      
-      // Add some perpendicular offset to simulate turns
-      const perpFactor = Math.sin(ratio * Math.PI) * 0.0015; // Controls curve amount
-      
-      // Calculate perpendicular direction
-      const perpX = -dy; // Perpendicular vector
-      const perpY = dx;
-      const mag = Math.sqrt(perpX * perpX + perpY * perpY);
-      
-      // Apply perpendicular offset (if the distance is not too small)
-      if (mag > 0.001) {
-        x += (perpX / mag) * perpFactor;
-        y += (perpY / mag) * perpFactor;
-      }
-      
-      path.push([x, y]);
+    // Determine if we should use a multi-segment path (for longer distances)
+    // For very short distances, just use a direct path with slight curve
+    if (distance < 0.002) { // Very short distance
+      // Just add a slight curve
+      const midpoint: [number, number] = [
+        start[0] + dx * 0.5 + dy * 0.0008,
+        start[1] + dy * 0.5 - dx * 0.0008
+      ];
+      path.push(midpoint);
+      path.push(end);
+      return path;
     }
     
-    path.push(end); // Add ending point
+    // For longer distances, simulate a street grid with perpendicular segments
+    
+    // First decide if we go horizontal first then vertical, or vertical first then horizontal
+    // This creates an L-shaped path that follows a more realistic street grid pattern
+    const goHorizontalFirst = Math.abs(dx) > Math.abs(dy);
+    
+    if (goHorizontalFirst) {
+      // First go mostly horizontal (keeping a bit of the vertical)
+      const horizontalPoint: [number, number] = [
+        end[0], 
+        start[1] + (dy * 0.2) // Keep a little bit of vertical movement
+      ];
+      
+      // Add some minor points along the first segment for a smoother curve
+      const firstSegPoints = 3;
+      for (let i = 1; i <= firstSegPoints; i++) {
+        const ratio = i / (firstSegPoints + 1);
+        const point: [number, number] = [
+          start[0] + (horizontalPoint[0] - start[0]) * ratio,
+          start[1] + (horizontalPoint[1] - start[1]) * ratio
+        ];
+        path.push(point);
+      }
+      
+      // Add the main corner point
+      path.push(horizontalPoint);
+      
+      // Now add points for the mostly vertical segment
+      const secondSegPoints = 3;
+      for (let i = 1; i <= secondSegPoints; i++) {
+        const ratio = i / (secondSegPoints + 1);
+        const point: [number, number] = [
+          horizontalPoint[0] + (end[0] - horizontalPoint[0]) * ratio,
+          horizontalPoint[1] + (end[1] - horizontalPoint[1]) * ratio
+        ];
+        path.push(point);
+      }
+    } else {
+      // First go mostly vertical (keeping a bit of the horizontal)
+      const verticalPoint: [number, number] = [
+        start[0] + (dx * 0.2), // Keep a little bit of horizontal movement
+        end[1]
+      ];
+      
+      // Add some minor points along the first segment for a smoother curve
+      const firstSegPoints = 3;
+      for (let i = 1; i <= firstSegPoints; i++) {
+        const ratio = i / (firstSegPoints + 1);
+        const point: [number, number] = [
+          start[0] + (verticalPoint[0] - start[0]) * ratio,
+          start[1] + (verticalPoint[1] - start[1]) * ratio
+        ];
+        path.push(point);
+      }
+      
+      // Add the main corner point
+      path.push(verticalPoint);
+      
+      // Now add points for the mostly horizontal segment
+      const secondSegPoints = 3;
+      for (let i = 1; i <= secondSegPoints; i++) {
+        const ratio = i / (secondSegPoints + 1);
+        const point: [number, number] = [
+          verticalPoint[0] + (end[0] - verticalPoint[0]) * ratio,
+          verticalPoint[1] + (end[1] - verticalPoint[1]) * ratio
+        ];
+        path.push(point);
+      }
+    }
+    
+    // Add ending point
+    path.push(end);
+    
     return path;
   };
   
