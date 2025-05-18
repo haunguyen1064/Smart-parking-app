@@ -213,8 +213,8 @@ export default function ParkingLayoutModal({
                         {row.prefix} ({row.slotCount} chỗ)
                       </div>
                     </div>
-                    <div className="overflow-x-auto pb-2">
-                      <div className="flex gap-2 min-w-fit">
+                    <div className="overflow-x-auto pb-2 max-w-[100%] border border-gray-100 rounded-sm">
+                      <div className="flex gap-2 min-w-fit p-2">
                         {Array.from({ length: row.slotCount }).map((_, slotIndex) => (
                           <div
                             key={slotIndex}
