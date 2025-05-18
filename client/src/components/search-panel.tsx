@@ -29,7 +29,7 @@ export default function SearchPanel({
   };
   
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col overflow-hidden">
       <div className="p-4 flex-shrink-0">
         {onBack && (
           <div className="mb-4">

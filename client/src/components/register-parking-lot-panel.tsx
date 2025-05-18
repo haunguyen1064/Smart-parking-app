@@ -41,7 +41,7 @@ export default function RegisterParkingLotPanel({ onBack }: RegisterParkingLotPa
   };
   
   return (
-    <div className="w-full h-full flex flex-col bg-white">
+    <div className="w-full h-full flex flex-col bg-white overflow-hidden">
       <div className="p-4 border-b flex-shrink-0">
         <div className="flex items-center">
           <Button 
