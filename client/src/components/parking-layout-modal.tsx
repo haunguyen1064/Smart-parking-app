@@ -1,0 +1,227 @@
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+
+export type ParkingRowConfig = {
+  prefix: string;
+  slotCount: number;
+};
+
+export type ParkingLayoutConfig = {
+  name: string;
+  rows: ParkingRowConfig[];
+};
+
+type ParkingLayoutModalProps = {
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: (layoutConfig: ParkingLayoutConfig) => void;
+};
+
+export default function ParkingLayoutModal({
+  isOpen,
+  onClose,
+  onConfirm,
+}: ParkingLayoutModalProps) {
+  // Layout name
+  const [layoutName, setLayoutName] = useState<string>("Khu A");
+  
+  // Number of rows
+  const [rowCount, setRowCount] = useState<number>(5);
+  
+  // Selected row for editing
+  const [selectedRowIndex, setSelectedRowIndex] = useState<number>(0);
+  
+  // Row configurations - prefix and slot count for each row
+  const [rowConfigs, setRowConfigs] = useState<ParkingRowConfig[]>([]);
+  
+  // Initialize row configs when row count changes
+  useEffect(() => {
+    // Keep existing configurations if available
+    const newConfigs = [...rowConfigs];
+    
+    // Add configurations for new rows
+    for (let i = 0; i < rowCount; i++) {
+      if (!newConfigs[i]) {
+        // Default configuration for a new row
+        // Use letters A, B, C, etc. for prefixes based on row index
+        const prefix = String.fromCharCode(65 + i); // 65 is ASCII for 'A'
+        newConfigs[i] = {
+          prefix,
+          slotCount: 7 // Default number of slots per row
+        };
+      }
+    }
+    
+    // Trim if rowCount decreased
+    while (newConfigs.length > rowCount) {
+      newConfigs.pop();
+    }
+    
+    setRowConfigs(newConfigs);
+  }, [rowCount]);
+  
+  // When selected row changes, ensure UI is updated
+  useEffect(() => {
+    // Make sure the selected row index is valid
+    if (selectedRowIndex >= rowCount) {
+      setSelectedRowIndex(0);
+    }
+  }, [selectedRowIndex, rowCount]);
+  
+  // Handle changes to the selected row's slot count
+  const handleSlotCountChange = (count: number) => {
+    const newConfigs = [...rowConfigs];
+    if (newConfigs[selectedRowIndex]) {
+      newConfigs[selectedRowIndex] = {
+        ...newConfigs[selectedRowIndex],
+        slotCount: count,
+      };
+      setRowConfigs(newConfigs);
+    }
+  };
+  
+  // Handle changes to the selected row's prefix
+  const handlePrefixChange = (prefix: string) => {
+    const newConfigs = [...rowConfigs];
+    if (newConfigs[selectedRowIndex]) {
+      newConfigs[selectedRowIndex] = {
+        ...newConfigs[selectedRowIndex],
+        prefix,
+      };
+      setRowConfigs(newConfigs);
+    }
+  };
+  
+  // Handle confirmation
+  const handleConfirm = () => {
+    onConfirm({
+      name: layoutName,
+      rows: rowConfigs,
+    });
+    onClose();
+  };
+  
+  return (
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle className="text-xl">Thêm sơ đồ</DialogTitle>
+        </DialogHeader>
+        
+        <div className="space-y-4 mt-4">
+          {/* Layout name */}
+          <div>
+            <Label htmlFor="layout-name">Tên sơ đồ</Label>
+            <Input
+              id="layout-name"
+              value={layoutName}
+              onChange={(e) => setLayoutName(e.target.value)}
+              placeholder="Tên khu vực (VD: Khu A)"
+            />
+          </div>
+          
+          {/* Number of rows */}
+          <div>
+            <Label htmlFor="row-count">Số hàng</Label>
+            <Input
+              id="row-count"
+              type="number"
+              min={1}
+              max={10}
+              value={rowCount}
+              onChange={(e) => setRowCount(Math.max(1, parseInt(e.target.value) || 1))}
+            />
+          </div>
+          
+          {/* Row configuration section */}
+          <div className="space-y-2">
+            <Label>Thông tin chỗ đỗ xe theo hàng</Label>
+            
+            <div className="grid grid-cols-3 gap-4">
+              {/* Row selector */}
+              <div>
+                <Select
+                  value={selectedRowIndex.toString()}
+                  onValueChange={(value) => setSelectedRowIndex(parseInt(value))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Chọn hàng" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Array.from({ length: rowCount }).map((_, index) => (
+                      <SelectItem key={index} value={index.toString()}>
+                        Hàng {index + 1}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              {/* Slot count */}
+              <div>
+                <Input
+                  type="number"
+                  min={1}
+                  max={20}
+                  placeholder="Số chỗ"
+                  value={rowConfigs[selectedRowIndex]?.slotCount || 0}
+                  onChange={(e) => handleSlotCountChange(parseInt(e.target.value) || 0)}
+                />
+              </div>
+              
+              {/* Prefix */}
+              <div>
+                <Input
+                  placeholder="Ký hiệu"
+                  value={rowConfigs[selectedRowIndex]?.prefix || ""}
+                  onChange={(e) => handlePrefixChange(e.target.value)}
+                  maxLength={1}
+                />
+              </div>
+            </div>
+          </div>
+          
+          {/* Layout preview */}
+          <div>
+            <Label className="block mb-2">Xem trước sơ đồ</Label>
+            <div className="border rounded-md p-4 min-h-[200px]">
+              {rowConfigs.map((row, rowIndex) => (
+                <div key={rowIndex} className="flex flex-wrap gap-2 mb-2">
+                  {Array.from({ length: row.slotCount }).map((_, slotIndex) => (
+                    <div
+                      key={slotIndex}
+                      className="w-12 h-16 rounded-md bg-blue-500 text-white flex items-center justify-center font-medium"
+                    >
+                      {row.prefix}{slotIndex + 1}
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+        
+        <DialogFooter className="mt-4">
+          <Button variant="outline" onClick={onClose}>Hủy</Button>
+          <Button onClick={handleConfirm}>Xác nhận</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}

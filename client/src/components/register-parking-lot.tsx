@@ -5,6 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import ParkingLayoutModal, { ParkingLayoutConfig } from "./parking-layout-modal";
 
 type RegisterParkingLotProps = {
   onClose: () => void;
@@ -15,9 +16,21 @@ export default function RegisterParkingLot({ onClose }: RegisterParkingLotProps)
   const [vehicleType, setVehicleType] = useState<string[]>([]);
   const [priceRange, setPriceRange] = useState<string>("");
   const [mapSelection, setMapSelection] = useState(false);
+  const [isLayoutModalOpen, setIsLayoutModalOpen] = useState(false);
+  const [parkingLayout, setParkingLayout] = useState<ParkingLayoutConfig | null>(null);
   
   const schematicImageRef = useRef<HTMLInputElement>(null);
   const realImageRef = useRef<HTMLInputElement>(null);
+  
+  // Handle the layout configuration from the modal
+  const handleLayoutConfirm = (layoutConfig: ParkingLayoutConfig) => {
+    setParkingLayout(layoutConfig);
+    
+    toast({
+      title: "Đã thêm sơ đồ",
+      description: `Sơ đồ '${layoutConfig.name}' với ${layoutConfig.rows.length} hàng đã được thêm.`
+    });
+  };
   
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -189,21 +202,22 @@ export default function RegisterParkingLot({ onClose }: RegisterParkingLotProps)
               
               {/* Image Uploads */}
               <div className="grid grid-cols-2 gap-4 mt-4">
-                {/* Schematic Image */}
+                {/* Parking Layout */}
                 <div className="space-y-2">
                   <Label>Thêm Sơ đồ</Label>
                   <div 
-                    className="border-2 border-dashed border-gray-300 rounded-md h-32 flex items-center justify-center cursor-pointer hover:bg-gray-50"
-                    onClick={() => schematicImageRef.current?.click()}
+                    className="border-2 border-dashed border-gray-300 rounded-md h-32 flex flex-col items-center justify-center cursor-pointer hover:bg-gray-50"
+                    onClick={() => setIsLayoutModalOpen(true)}
                   >
-                    <div className="text-gray-400 text-4xl">+</div>
+                    {parkingLayout ? (
+                      <div className="flex flex-col items-center text-sm">
+                        <div className="text-blue-500 font-medium mb-1">{parkingLayout.name}</div>
+                        <div className="text-gray-500">{parkingLayout.rows.length} hàng, {parkingLayout.rows.reduce((total, row) => total + row.slotCount, 0)} chỗ</div>
+                      </div>
+                    ) : (
+                      <div className="text-gray-400 text-4xl">+</div>
+                    )}
                   </div>
-                  <input 
-                    type="file" 
-                    ref={schematicImageRef} 
-                    className="hidden" 
-                    accept="image/*"
-                  />
                 </div>
                 
                 {/* Real Image */}
@@ -234,6 +248,13 @@ export default function RegisterParkingLot({ onClose }: RegisterParkingLotProps)
           </form>
         </div>
       </div>
+      
+      {/* Parking Layout Modal */}
+      <ParkingLayoutModal
+        isOpen={isLayoutModalOpen}
+        onClose={() => setIsLayoutModalOpen(false)}
+        onConfirm={handleLayoutConfirm}
+      />
     </div>
   );
 }
