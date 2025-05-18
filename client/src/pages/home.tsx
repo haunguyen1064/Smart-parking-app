@@ -172,29 +172,35 @@ export default function Home() {
       
       {/* We don't need the buttons overlay anymore as they are now in the HomePanel */}
       
-      <main className="flex-grow flex flex-col md:flex-row overflow-hidden">
-        <SimpleMap
-          markers={parkingLotMarkers}
-          onMarkerClick={handleMarkerClick}
-          selectedMarkerId={selectedParkingLot?.id}
-          onRouteCalculated={handleRouteCalculated}
-        />
+      <main className="flex-grow relative overflow-hidden">
+        {/* Map fills the entire container */}
+        <div className="absolute inset-0 w-full h-full">
+          <SimpleMap
+            markers={parkingLotMarkers}
+            onMarkerClick={handleMarkerClick}
+            selectedMarkerId={selectedParkingLot?.id}
+            onRouteCalculated={handleRouteCalculated}
+          />
+        </div>
         
-        <ContentPanel
-          parkingLots={parkingLots}
-          isLoading={isParkingLotsLoading}
-          selectedParkingLot={selectedParkingLot}
-          setSelectedParkingLot={setSelectedParkingLot}
-          parkingSpaces={parkingSpaces}
-          isSpacesLoading={isParkingSpacesLoading}
-          selectedParkingSpace={selectedParkingSpace}
-          setSelectedParkingSpace={setSelectedParkingSpace}
-          onCreateBooking={createBooking}
-          isBookingLoading={false}
-          routes={routes || undefined}
-          onNavigate={handleNavigate}
-          onRegisterParking={() => setShowRegisterForm(true)}
-        />
+        {/* Content panel is positioned over the map */}
+        <div className="absolute top-0 right-0 h-full z-10">
+          <ContentPanel
+            parkingLots={parkingLots}
+            isLoading={isParkingLotsLoading}
+            selectedParkingLot={selectedParkingLot}
+            setSelectedParkingLot={setSelectedParkingLot}
+            parkingSpaces={parkingSpaces}
+            isSpacesLoading={isParkingSpacesLoading}
+            selectedParkingSpace={selectedParkingSpace}
+            setSelectedParkingSpace={setSelectedParkingSpace}
+            onCreateBooking={createBooking}
+            isBookingLoading={false}
+            routes={routes || undefined}
+            onNavigate={handleNavigate}
+            onRegisterParking={() => setShowRegisterForm(true)}
+          />
+        </div>
       </main>
       
       {/* Register Parking Lot Form */}
