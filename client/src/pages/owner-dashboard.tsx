@@ -137,16 +137,9 @@ export default function OwnerDashboard() {
     pricePerHour: "15000"
   });
 
-  // Redirect if not logged in or not an owner
+  // For demo purposes, allow all logged-in users to access the dashboard
   useEffect(() => {
-    if (user && user.role !== "owner") {
-      toast({
-        title: "Quyền truy cập bị từ chối",
-        description: "Bạn không có quyền truy cập vào trang này.",
-        variant: "destructive",
-      });
-      navigate("/");
-    } else if (!user) {
+    if (!user) {
       toast({
         title: "Vui lòng đăng nhập",
         description: "Bạn cần đăng nhập để truy cập trang này.",
@@ -230,7 +223,8 @@ export default function OwnerDashboard() {
     });
   };
 
-  if (!user || user.role !== "owner") {
+  // For demo purposes, allow access if user is logged in
+  if (!user) {
     return null; // Will redirect via useEffect
   }
 
