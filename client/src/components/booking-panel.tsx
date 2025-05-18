@@ -44,6 +44,12 @@ export default function BookingPanel({
     format(addDays(new Date(), 1), "dd/MM/yyyy"),
   ]);
   
+  // Booking by month states
+  const [startMonthDate, setStartMonthDate] = useState<string>(
+    format(new Date(), "dd/MM/yyyy")
+  );
+  const [monthCount, setMonthCount] = useState<number>(1);
+  
   // Group parking spaces by zone
   const groupedSpaces = parkingSpaces.reduce((groups, space) => {
     if (!groups[space.zone]) {
@@ -120,8 +126,19 @@ export default function BookingPanel({
       // Calculate price (assuming daily price is 8 hours of hourly price)
       totalPrice = parkingLot.pricePerHour * 8 * daysDifference;
     }
+    else if (activeTab === "month") {
+      // Parse the start date string (format: dd/MM/yyyy)
+      const [startDay, startMonth, startYear] = startMonthDate.split('/').map(Number);
+      startDateTime = new Date(startYear, startMonth - 1, startDay, 0, 0, 0);
+      
+      // Calculate end date (add months to start date)
+      endDateTime = addMonths(startDateTime, monthCount);
+      
+      // Calculate price (assuming monthly price is 30 days of daily price)
+      // Daily price is 8 hours of hourly price
+      totalPrice = parkingLot.pricePerHour * 8 * 30 * monthCount;
+    }
     else {
-      // Month booking - not implemented yet
       return;
     }
     
@@ -287,9 +304,46 @@ export default function BookingPanel({
             </div>
           </TabsContent>
           
-          <TabsContent value="month">
-            <div className="bg-gray-100 p-6 rounded-md text-center text-gray-500">
-              Chức năng đặt theo tháng sẽ được cập nhật sau
+          <TabsContent value="month" className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm text-gray-600 mb-1">Từ ngày</label>
+                <Input
+                  type="date"
+                  value={format(parseISO(startMonthDate.split('/').reverse().join('-')), 'yyyy-MM-dd')}
+                  onChange={(e) => setStartMonthDate(format(new Date(e.target.value), 'dd/MM/yyyy'))}
+                  min={format(new Date(), "yyyy-MM-dd")}
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-gray-600 mb-1">Số tháng</label>
+                <Input
+                  type="number"
+                  value={monthCount}
+                  onChange={(e) => setMonthCount(parseInt(e.target.value) || 1)}
+                  min="1"
+                  max="12"
+                />
+              </div>
+            </div>
+            
+            <div className="bg-blue-50 p-3 rounded-md">
+              <div className="flex justify-between">
+                <div className="flex items-center">
+                  <Calendar className="h-4 w-4 mr-2 text-gray-600" />
+                  <span className="text-sm font-medium">Thời hạn:</span>
+                </div>
+                <span className="font-medium">{monthCount} tháng</span>
+              </div>
+              <div className="flex justify-between mt-2">
+                <div className="flex items-center">
+                  <Calendar className="h-4 w-4 mr-2 text-gray-600" />
+                  <span className="text-sm font-medium">Tổng tiền:</span>
+                </div>
+                <span className="font-medium text-primary">
+                  {(parkingLot.pricePerHour * 8 * 30 * monthCount).toLocaleString('vi-VN')}đ
+                </span>
+              </div>
             </div>
           </TabsContent>
         </Tabs>
