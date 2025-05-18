@@ -157,11 +157,12 @@ export default function ParkingLayoutModal({
             <div className="grid grid-cols-3 gap-4">
               {/* Row selector */}
               <div>
+                <Label htmlFor="row-select" className="text-xs mb-1 block">Chọn hàng</Label>
                 <Select
                   value={selectedRowIndex.toString()}
                   onValueChange={(value) => setSelectedRowIndex(parseInt(value))}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger id="row-select">
                     <SelectValue placeholder="Chọn hàng" />
                   </SelectTrigger>
                   <SelectContent>
