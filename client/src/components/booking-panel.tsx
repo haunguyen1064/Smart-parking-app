@@ -153,7 +153,7 @@ export default function BookingPanel({
   };
   
   return (
-    <div className="border-t border-gray-200 p-4 h-full overflow-y-auto">
+    <div className="border-t border-gray-200 p-4">
       <div className="flex items-center mb-4">
         <Button variant="ghost" size="sm" className="mr-2" onClick={onBack}>
           <ArrowLeft className="h-4 w-4" />

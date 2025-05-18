@@ -93,7 +93,7 @@ export default function ContentPanel({
   };
 
   return (
-    <div className="w-full md:w-2/5 bg-white h-full overflow-hidden" id="content-panel">
+    <div className="w-full md:w-2/5 bg-white h-full overflow-auto" id="content-panel">
       {/* Home Panel */}
       <div className={activePanel !== "home" ? "hidden" : ""}>
         <HomePanel 
@@ -140,7 +140,7 @@ export default function ContentPanel({
       </div>
       
       {/* Booking Panel */}
-      <div className={activePanel !== "booking" ? "hidden" : ""}>
+      <div className={activePanel !== "booking" ? "hidden" : "h-full"}>
         {selectedParkingLot && (
           <BookingPanel 
             parkingLot={selectedParkingLot}
