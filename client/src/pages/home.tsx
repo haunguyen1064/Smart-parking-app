@@ -167,12 +167,11 @@ export default function Home() {
   };
   
   return (
-    <div className="flex flex-col h-screen overflow-hidden">
+    <div className="h-screen overflow-hidden relative">
       <Navbar />
       
-      {/* We don't need the buttons overlay anymore as they are now in the HomePanel */}
-      
-      <main className="flex-grow flex flex-col md:flex-row overflow-hidden">
+      {/* Full-screen map */}
+      <main className="h-[calc(100vh-64px)] w-full overflow-hidden">
         <SimpleMap
           markers={parkingLotMarkers}
           onMarkerClick={handleMarkerClick}
@@ -180,21 +179,47 @@ export default function Home() {
           onRouteCalculated={handleRouteCalculated}
         />
         
-        <ContentPanel
-          parkingLots={parkingLots}
-          isLoading={isParkingLotsLoading}
-          selectedParkingLot={selectedParkingLot}
-          setSelectedParkingLot={setSelectedParkingLot}
-          parkingSpaces={parkingSpaces}
-          isSpacesLoading={isParkingSpacesLoading}
-          selectedParkingSpace={selectedParkingSpace}
-          setSelectedParkingSpace={setSelectedParkingSpace}
-          onCreateBooking={createBooking}
-          isBookingLoading={false}
-          routes={routes || undefined}
-          onNavigate={handleNavigate}
-          onRegisterParking={() => setShowRegisterForm(true)}
-        />
+        {/* Floating buttons in top-right corner */}
+        <div className="absolute top-20 right-6 z-10">
+          <div className="bg-white bg-opacity-90 backdrop-blur-sm rounded-lg p-4 shadow-lg">
+            <div className="flex flex-col space-y-2">
+              <Button 
+                className="rounded-md px-4 py-2 bg-indigo-500 text-white hover:bg-indigo-600 w-full"
+                onClick={() => setSelectedParkingLot(null)}
+              >
+                Tìm bãi đỗ xe gần bạn
+              </Button>
+              
+              <Button 
+                className="rounded-md px-4 py-2 bg-indigo-500 text-white hover:bg-indigo-600 w-full"
+                onClick={() => setShowRegisterForm(true)}
+              >
+                Đăng ký bãi đỗ xe của bạn
+              </Button>
+            </div>
+          </div>
+        </div>
+        
+        {/* Only show content panel when a parking lot is selected */}
+        {selectedParkingLot && (
+          <div className="absolute right-0 top-0 h-full w-full md:w-2/5 z-20">
+            <ContentPanel
+              parkingLots={parkingLots}
+              isLoading={isParkingLotsLoading}
+              selectedParkingLot={selectedParkingLot}
+              setSelectedParkingLot={setSelectedParkingLot}
+              parkingSpaces={parkingSpaces}
+              isSpacesLoading={isParkingSpacesLoading}
+              selectedParkingSpace={selectedParkingSpace}
+              setSelectedParkingSpace={setSelectedParkingSpace}
+              onCreateBooking={createBooking}
+              isBookingLoading={false}
+              routes={routes || undefined}
+              onNavigate={handleNavigate}
+              onRegisterParking={() => setShowRegisterForm(true)}
+            />
+          </div>
+        )}
       </main>
       
       {/* Register Parking Lot Form */}
