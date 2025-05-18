@@ -10,13 +10,15 @@ type SearchPanelProps = {
   parkingLots: ParkingLot[];
   onSelectParkingLot: (parkingLot: ParkingLot) => void;
   onSearch: (query: string) => void;
+  onBack?: () => void;
 };
 
 export default function SearchPanel({ 
   isLoading, 
   parkingLots, 
   onSelectParkingLot,
-  onSearch 
+  onSearch,
+  onBack
 }: SearchPanelProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [showFilters, setShowFilters] = useState(false);
@@ -28,6 +30,22 @@ export default function SearchPanel({
   
   return (
     <div className="p-4">
+      {onBack && (
+        <div className="mb-4">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={onBack}
+            className="flex items-center text-gray-600"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1 h-4 w-4">
+              <path d="m15 18-6-6 6-6"/>
+            </svg>
+            Quay lại
+          </Button>
+        </div>
+      )}
+      
       <form onSubmit={handleSearch} className="mb-4">
         <div className="relative">
           <Input

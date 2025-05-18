@@ -3,6 +3,7 @@ import SearchPanel from "./search-panel";
 import ParkingDetail from "./parking-detail";
 import BookingPanel from "./booking-panel";
 import HomePanel from "./home-panel";
+import RegisterParkingLotPanel from "./register-parking-lot-panel";
 import { ParkingLot, ParkingSpace } from "@/hooks/use-parking";
 import { RouteInfo } from "./simple-map";
 import { useAuth } from "@/hooks/use-auth";
@@ -23,7 +24,7 @@ type ContentPanelProps = {
   onRegisterParking?: () => void;
 };
 
-type PanelType = "home" | "search" | "detail" | "booking";
+type PanelType = "home" | "search" | "detail" | "booking" | "register";
 
 export default function ContentPanel({
   parkingLots,
@@ -78,9 +79,17 @@ export default function ContentPanel({
     }
   };
   
-  // Function to handle home search button
+  // Navigation handlers
   const handleSearchParking = () => {
     setActivePanel("search");
+  };
+  
+  const handleRegisterParking = () => {
+    setActivePanel("register");
+  };
+  
+  const handleBackToHome = () => {
+    setActivePanel("home");
   };
 
   return (
@@ -89,7 +98,7 @@ export default function ContentPanel({
       <div className={activePanel !== "home" ? "hidden" : ""}>
         <HomePanel 
           onSearchParking={handleSearchParking}
-          onRegisterParking={onRegisterParking || (() => {})}
+          onRegisterParking={handleRegisterParking}
         />
       </div>
       
@@ -100,7 +109,13 @@ export default function ContentPanel({
           parkingLots={parkingLots || []} 
           onSelectParkingLot={setSelectedParkingLot}
           onSearch={handleSearch}
+          onBack={handleBackToHome}
         />
+      </div>
+      
+      {/* Register Parking Lot Panel */}
+      <div className={activePanel !== "register" ? "hidden" : ""}>
+        <RegisterParkingLotPanel onBack={handleBackToHome} />
       </div>
       
       {/* Detail Panel */}
