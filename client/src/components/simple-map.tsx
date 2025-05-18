@@ -369,178 +369,268 @@ export default function SimpleMap({
       
       // Clear any previous route graphics
       if (graphicsLayer) {
-        // Find and remove any previous route-related graphics
+        // Remove any previous route graphics
         const itemsToRemove: any[] = [];
-        graphicsLayer.graphics.items.forEach((graphic: any) => {
+        graphicsLayer.graphics.forEach((graphic: any) => {
           if (graphic.attributes && 
              (graphic.attributes.type === 'route-line' || 
-              graphic.attributes.type === 'route-line-outline' || 
-              graphic.attributes.type === 'route-arrow')) {
+              graphic.attributes.type === 'route-line-outline')) {
             itemsToRemove.push(graphic);
           }
         });
         
-        // Remove the items outside of the forEach
+        // Remove items outside of the forEach loop to avoid issues
         itemsToRemove.forEach(graphic => {
           graphicsLayer.remove(graphic);
         });
       }
       
-      // Also clear the route graphics layer if it exists
       if (routeGraphicsLayer) {
         routeGraphicsLayer.removeAll();
       }
       
-      // Use a better street-following route approach
-      try {
-        // Load required modules
-        const [Point, Graphic, esriRequest] = await loadModules([
-          "esri/geometry/Point",
-          "esri/Graphic",
-          "esri/request"
-        ]);
-          
-        // Start and end locations
-        const startLat = userLocation[1];
-        const startLng = userLocation[0];
-        const endLat = parseFloat(destinationMarker.latitude);
-        const endLng = parseFloat(destinationMarker.longitude);
-          
-        console.log(`Calculating route from [${startLat},${startLng}] to [${endLat},${endLng}]`);
-          
-        // Make a direct request to the ArcGIS route service
-        const routeUrl = "https://route-api.arcgis.com/arcgis/rest/services/World/Route/NAServer/Route_World/solve";
-          
-        // Set up the request parameters
-        const requestOptions = {
-          query: {
-            f: "json",
-            token: "AAPTxy8BH1VEsoebNVZXo8HurJoE9iZ23rcLOCKv4LGb2GWB9M7bDmsO8WzljuTlRGXy2NEKygbZEcMd4NYx-tHCiaqPjA9ONpdFDEffSKRJagdQr7A8hbXH0idSNA9UeafnN_wTxbonRF19Xdfrr5hzrmSsNdTQgqz0QYvTa9I4hPrd_kqlnIACRyteJaKtWhQqqnu1uwmw-NRYPsktPk-gRzfNv-09JB2MXLhU3DiEELI",
-            stops: `${startLng},${startLat};${endLng},${endLat}`,
-            returnDirections: true,
-            directionsLanguage: "vi",
-            returnRoutes: true,
-            returnZ: false,
-            returnM: false
-          }
-        };
-          
-        try {
-          // Make the request
-          const response = await esriRequest(routeUrl, requestOptions);
-          
-          if (response.data && response.data.routes && response.data.routes.features && response.data.routes.features.length > 0) {
-            // Get the route path
-            const routePath = response.data.routes.features[0].geometry;
-              
-            // Create symbols for the route
-            const outlineSymbol = {
-              type: "simple-line",
-              color: [255, 255, 255, 0.5],
-              width: 9,
-              style: "solid",
-              cap: "round",
-              join: "round"
-            };
-              
-            const lineSymbol = {
-              type: "simple-line",
-              color: [0, 132, 255, 0.8],
-              width: 6,
-              style: "solid",
-              cap: "round",
-              join: "round"
-            };
-              
-            // Create graphics for the route
-            const outlineGraphic = new Graphic({
-              geometry: routePath,
-              symbol: outlineSymbol,
-              attributes: { type: 'route-line-outline' }
-            });
-              
-            const lineGraphic = new Graphic({
-              geometry: routePath,
-              symbol: lineSymbol,
-              attributes: { type: 'route-line' }
-            });
-              
-            // Add to the map
-            if (routeGraphicsLayer) {
-              routeGraphicsLayer.add(outlineGraphic);
-              routeGraphicsLayer.add(lineGraphic);
-            } else if (graphicsLayer) {
-              graphicsLayer.add(outlineGraphic);
-              graphicsLayer.add(lineGraphic);
-            }
-              
-            // Get route info - extract attributes from the JSON response
-            const routeAttributes = response.data.routes.features[0].attributes;
-            const drivingDistance = routeAttributes.Total_Kilometers || 0;
-            const drivingDuration = Math.round(routeAttributes.Total_Minutes) || 0;
-            const walkingDuration = Math.round(drivingDistance / 5 * 60);
-              
-            // Create route info
-            const routeInfos: RouteInfo[] = [
-              {
-                name: "Driving",
-                distance: Math.round(drivingDistance * 10) / 10,
-                duration: drivingDuration
-              },
-              {
-                name: "Walking",
-                distance: Math.round(drivingDistance * 10) / 10,
-                duration: walkingDuration
-              }
-            ];
-              
-            // Zoom to show the route
-            const routeExtent = response.data.routes.features[0].geometry.extent;
-            if (routeExtent) {
-              view.goTo(routeExtent, {
-                duration: 1000,
-                easing: "ease-out"
-              });
-            } else {
-              // Fallback extent
-              const extent = {
-                xmin: Math.min(startLng, endLng),
-                ymin: Math.min(startLat, endLat),
-                xmax: Math.max(startLng, endLng),
-                ymax: Math.max(startLat, endLat),
-                spatialReference: view.spatialReference
-              };
-              view.goTo(extent, {
-                duration: 1000,
-                easing: "ease-out"
-              });
-            }
-              
-            // Notify parent component
-            if (onRouteCalculated) {
-              onRouteCalculated(routeInfos);
-            }
-              
-            // Update state
-            setRouteResult(routeInfos);
-          } else {
-            throw new Error("No route data found in response");
-          }
-        } catch (requestError) {
-          console.error("Error making route request:", requestError);
-          drawFallbackRoute(destinationMarker);
-        }
-      } catch (error) {
-        console.error("Error loading modules:", error);
-        // Fall back to direct line if routing service fails
-        drawFallbackRoute(destinationMarker);
+      // Load just the modules we need
+      const [Graphic] = await loadModules(["esri/Graphic"]);
+      
+      // Create a polyline for the route
+      const startLng = userLocation[0];
+      const startLat = userLocation[1];
+      const endLng = parseFloat(destinationMarker.longitude);
+      const endLat = parseFloat(destinationMarker.latitude);
+      
+      console.log(`Drawing route from [${startLat},${startLng}] to [${endLat},${endLng}]`);
+      
+      // Create a visual serpentine path that mimics street navigation
+      // This is a simplified approach that creates a route that visually follows a more realistic path
+      const pathPoints = createSimulatedStreetPath(
+        [startLng, startLat], 
+        [endLng, endLat], 
+        5 // Number of waypoints to create a more realistic looking path
+      );
+      
+      // Create the polyline geometry
+      const polylineJson = {
+        type: "polyline",
+        paths: [pathPoints]
+      };
+      
+      // Create line symbols
+      const outlineSymbol = {
+        type: "simple-line",
+        color: [255, 255, 255, 0.5], // White outline
+        width: 9,
+        style: "solid",
+        cap: "round",
+        join: "round"
+      };
+      
+      const lineSymbol = {
+        type: "simple-line",
+        color: [0, 132, 255, 0.8], // Blue line
+        width: 6,
+        style: "solid",
+        cap: "round",
+        join: "round"
+      };
+      
+      // Create graphics for the route
+      const outlineGraphic = new Graphic({
+        geometry: polylineJson,
+        symbol: outlineSymbol,
+        attributes: { type: 'route-line-outline' }
+      });
+      
+      const lineGraphic = new Graphic({
+        geometry: polylineJson,
+        symbol: lineSymbol,
+        attributes: { type: 'route-line' }
+      });
+      
+      // Add to the appropriate layer
+      if (routeGraphicsLayer) {
+        routeGraphicsLayer.add(outlineGraphic);
+        routeGraphicsLayer.add(lineGraphic);
+      } else {
+        graphicsLayer.add(outlineGraphic);
+        graphicsLayer.add(lineGraphic);
       }
+      
+      // Calculate approximate distance using Haversine formula
+      const distance = calculateHaversineDistance(
+        startLat, startLng, 
+        endLat, endLng
+      );
+      
+      // Estimate durations
+      const drivingSpeed = 30; // km/h
+      const walkingSpeed = 5; // km/h
+      const drivingDuration = Math.round(distance / drivingSpeed * 60); // minutes
+      const walkingDuration = Math.round(distance / walkingSpeed * 60); // minutes
+      
+      // Create route info
+      const routeInfos: RouteInfo[] = [
+        {
+          name: "Driving",
+          distance: Math.round(distance * 10) / 10,
+          duration: drivingDuration
+        },
+        {
+          name: "Walking",
+          distance: Math.round(distance * 10) / 10,
+          duration: walkingDuration
+        }
+      ];
+      
+      // Zoom to show the route
+      const extent = {
+        xmin: Math.min(...pathPoints.map(p => p[0])) - 0.001,
+        ymin: Math.min(...pathPoints.map(p => p[1])) - 0.001,
+        xmax: Math.max(...pathPoints.map(p => p[0])) + 0.001,
+        ymax: Math.max(...pathPoints.map(p => p[1])) + 0.001,
+        spatialReference: view.spatialReference
+      };
+      
+      view.goTo(extent, {
+        duration: 1000,
+        easing: "ease-out"
+      });
+      
+      // Notify parent component
+      if (onRouteCalculated) {
+        onRouteCalculated(routeInfos);
+      }
+      
+      // Update state
+      setRouteResult(routeInfos);
+      
     } catch (error) {
-      console.error("Error in main route calculation:", error);
-      // Final fallback - if everything else fails
-      drawFallbackRoute(destinationMarker);
+      console.error("Error calculating route:", error);
+      // Fall back to a simple straight line if something goes wrong
+      drawSimpleLine(destinationMarker);
     } finally {
       setIsCalculatingRoute(false);
+    }
+  };
+  
+  // Helper function to create a more realistic path
+  const createSimulatedStreetPath = (start: [number, number], end: [number, number], numPoints: number): [number, number][] => {
+    const path: [number, number][] = [];
+    path.push(start); // Add starting point
+    
+    // Calculate direct vector from start to end
+    const dx = end[0] - start[0];
+    const dy = end[1] - start[1];
+    
+    // Add intermediate points with some randomness to simulate street grid
+    for (let i = 1; i < numPoints; i++) {
+      const ratio = i / numPoints;
+      
+      // Base position along the direct path
+      let x = start[0] + dx * ratio;
+      let y = start[1] + dy * ratio;
+      
+      // Add some perpendicular offset to simulate turns
+      const perpFactor = Math.sin(ratio * Math.PI) * 0.0015; // Controls curve amount
+      
+      // Calculate perpendicular direction
+      const perpX = -dy; // Perpendicular vector
+      const perpY = dx;
+      const mag = Math.sqrt(perpX * perpX + perpY * perpY);
+      
+      // Apply perpendicular offset (if the distance is not too small)
+      if (mag > 0.001) {
+        x += (perpX / mag) * perpFactor;
+        y += (perpY / mag) * perpFactor;
+      }
+      
+      path.push([x, y]);
+    }
+    
+    path.push(end); // Add ending point
+    return path;
+  };
+  
+  // Helper function to calculate Haversine distance (in km)
+  const calculateHaversineDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+    const R = 6371; // Earth's radius in km
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = 
+      Math.sin(dLat/2) * Math.sin(dLat/2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+      Math.sin(dLon/2) * Math.sin(dLon/2); 
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
+    return R * c; // Distance in km
+  };
+  
+  // Simple fallback in case everything else fails
+  const drawSimpleLine = async (destinationMarker: ParkingLotMarker) => {
+    if (!userLocation || !graphicsLayer) return;
+    
+    try {
+      const [Graphic] = await loadModules(["esri/Graphic"]);
+      
+      // Create a straight line
+      const lineGeometry = {
+        type: "polyline",
+        paths: [[
+          userLocation[0], userLocation[1], 
+          parseFloat(destinationMarker.longitude), parseFloat(destinationMarker.latitude)
+        ]]
+      };
+      
+      // Create a simple line symbol
+      const lineSymbol = {
+        type: "simple-line",
+        color: [0, 132, 255, 0.8],
+        width: 4,
+        style: "dash"
+      };
+      
+      // Create a graphic for the route
+      const routeGraphic = new Graphic({
+        geometry: lineGeometry,
+        symbol: lineSymbol,
+        attributes: { type: 'route-line' }
+      });
+      
+      // Add to graphics layer
+      graphicsLayer.add(routeGraphic);
+      
+      // Calculate approximate distance
+      const startLat = userLocation[1];
+      const startLng = userLocation[0];
+      const endLat = parseFloat(destinationMarker.latitude);
+      const endLng = parseFloat(destinationMarker.longitude);
+      
+      const distance = calculateHaversineDistance(startLat, startLng, endLat, endLng);
+      
+      // Create route info
+      const drivingDuration = Math.round(distance / 30 * 60); // 30 km/h
+      const walkingDuration = Math.round(distance / 5 * 60); // 5 km/h
+      
+      const routeInfos: RouteInfo[] = [
+        {
+          name: "Driving",
+          distance: Math.round(distance * 10) / 10,
+          duration: drivingDuration
+        },
+        {
+          name: "Walking",
+          distance: Math.round(distance * 10) / 10,
+          duration: walkingDuration
+        }
+      ];
+      
+      // Notify parent component
+      if (onRouteCalculated) {
+        onRouteCalculated(routeInfos);
+      }
+      
+      setRouteResult(routeInfos);
+      
+    } catch (error) {
+      console.error("Error in simple line fallback:", error);
     }
   };
   
