@@ -58,30 +58,24 @@ export default function SimpleMap({
     const initMap = async () => {
       try {
         // Load basic map modules
-        const [esriConfig, Map, MapView, GraphicsLayer, Graphic, Point, RouteTask, RouteParameters] = await loadModules([
+        // Load only the basic modules first to ensure the map displays
+        const [esriConfig, Map, MapView, GraphicsLayer, Graphic, Point] = await loadModules([
           "esri/config",
           "esri/Map",
           "esri/views/MapView",
           "esri/layers/GraphicsLayer",
           "esri/Graphic",
-          "esri/geometry/Point",
-          "esri/tasks/RouteTask",
-          "esri/tasks/support/RouteParameters"
+          "esri/geometry/Point"
         ], { css: false }); // CSS is already loaded above
         
         // Configure API key
         esriConfig.apiKey = "AAPTxy8BH1VEsoebNVZXo8HurJoE9iZ23rcLOCKv4LGb2GWB9M7bDmsO8WzljuTlRGXy2NEKygbZEcMd4NYx-tHCiaqPjA9ONpdFDEffSKRJagdQr7A8hbXH0idSNA9UeafnN_wTxbonRF19Xdfrr5hzrmSsNdTQgqz0QYvTa9I4hPrd_kqlnIACRyteJaKtWhQqqnu1uwmw-NRYPsktPk-gRzfNv-09JB2MXLhU3DiEELI";
         
-        // Set up route task using ArcGIS routing service
-        const routeTask = new RouteTask({
-          url: "https://route-api.arcgis.com/arcgis/rest/services/World/Route/NAServer/Route_World"
-        });
-        
-        setRouteTask(routeTask);
+        // We'll load the routing modules later when needed to avoid initialization issues
         
         // Configure map
         const map = new Map({
-          basemap: "streets-navigation-vector" // Streets basemap which works well with routing
+          basemap: "osm" // OpenStreetMap basemap is more reliable
         });
         
         // Create graphics layer for markers
@@ -397,166 +391,136 @@ export default function SimpleMap({
         routeGraphicsLayer.removeAll();
       }
       
-      // Check if we have access to the routing service
-      if (routeTask) {
-        try {
-          // Load necessary routing modules
-          const [Point, Graphic, FeatureSet, RouteParameters] = await loadModules([
-            "esri/geometry/Point",
-            "esri/Graphic",
-            "esri/tasks/support/FeatureSet",
-            "esri/tasks/support/RouteParameters"
-          ]);
+      // Use our routing service with the ArcGIS API key
+      try {
+        // First, try to load the RouteTask module
+        const [RouteTask, RouteParameters, Point, Graphic, FeatureSet] = await loadModules([
+          "esri/tasks/RouteTask",
+          "esri/tasks/support/RouteParameters",
+          "esri/geometry/Point",
+          "esri/Graphic",
+          "esri/tasks/support/FeatureSet"
+        ]);
+        
+        // Create a route task with the routing service
+        const routeTask = new RouteTask({
+          url: "https://route-api.arcgis.com/arcgis/rest/services/World/Route/NAServer/Route_World"
+        });
+        
+        // Create start and end points
+        const startPoint = new Point({
+          longitude: userLocation[0],
+          latitude: userLocation[1]
+        });
+        
+        const endPoint = new Point({
+          longitude: parseFloat(destinationMarker.longitude),
+          latitude: parseFloat(destinationMarker.latitude)
+        });
+        
+        // Create a feature set for the stops
+        const stopsFeatureSet = new FeatureSet({
+          features: [
+            new Graphic({ geometry: startPoint }),
+            new Graphic({ geometry: endPoint })
+          ]
+        });
+        
+        // Set route parameters
+        const routeParams = new RouteParameters({
+          stops: stopsFeatureSet,
+          returnRoutes: true,
+          returnDirections: true,
+          directionsLanguage: "vi"
+        });
+        
+        // Get the route
+        const result = await routeTask.solve(routeParams);
+        
+        if (result.routeResults && result.routeResults.length > 0) {
+          // Create street-following route
+          const routeGeometry = result.routeResults[0].route.geometry;
           
-          // Create start point (user location)
-          const startPoint = new Point({
-            longitude: userLocation[0],
-            latitude: userLocation[1]
-          });
-          
-          // Create end point (parking lot)
-          const endPoint = new Point({
-            longitude: parseFloat(destinationMarker.longitude),
-            latitude: parseFloat(destinationMarker.latitude)
-          });
-          
-          // Create a simple marker symbol for stops
-          const stopSymbol = {
-            type: "simple-marker",
-            color: [255, 255, 255],
-            size: 12,
-            outline: {
-              color: [0, 0, 0],
-              width: 1
-            }
+          // Create symbols for the route
+          const outlineSymbol = {
+            type: "simple-line",
+            color: [255, 255, 255, 0.5],
+            width: 9,
+            style: "solid",
+            cap: "round",
+            join: "round"
           };
           
-          // Create graphics for the start and end points
-          const startGraphic = new Graphic({
-            geometry: startPoint,
-            symbol: stopSymbol
+          const lineSymbol = {
+            type: "simple-line",
+            color: [0, 132, 255, 0.8],
+            width: 6,
+            style: "solid",
+            cap: "round",
+            join: "round"
+          };
+          
+          // Create graphics for the route
+          const outlineGraphic = new Graphic({
+            geometry: routeGeometry,
+            symbol: outlineSymbol,
+            attributes: { type: 'route-line-outline' }
           });
           
-          const endGraphic = new Graphic({
-            geometry: endPoint,
-            symbol: stopSymbol
+          const lineGraphic = new Graphic({
+            geometry: routeGeometry,
+            symbol: lineSymbol,
+            attributes: { type: 'route-line' }
           });
           
-          // Create a feature set for stops
-          const stopsFeatureSet = new FeatureSet({
-            features: [startGraphic, endGraphic]
-          });
-          
-          // Create route parameters
-          const routeParams = new RouteParameters({
-            stops: stopsFeatureSet,
-            returnRoutes: true,
-            returnDirections: true,
-            directionsLanguage: "vi", // Vietnamese for directions
-            findBestSequence: false, // Because order matters - start to end
-            preserveFirstStop: true,
-            preserveLastStop: true,
-            returnStops: true,
-            returnZ: false,
-            // Add travel modes
-            restrictionAttributes: ["Avoid Toll Roads", "Avoid Unpaved Roads"],
-            outputGeometry: true
-          });
-          
-          // Get the route from the ArcGIS routing service
-          const result = await routeTask.solve(routeParams);
-          
-          if (result.routeResults && result.routeResults.length > 0) {
-            // Create line symbols for the route
-            const routeOutlineSymbol = {
-              type: "simple-line",
-              color: [255, 255, 255, 0.5], // White outline
-              width: 9,
-              style: "solid",
-              cap: "round",
-              join: "round"
-            };
-            
-            const routeLineSymbol = {
-              type: "simple-line",
-              color: [0, 132, 255, 0.8], // Bright blue, similar to Google Maps
-              width: 6,
-              style: "solid",
-              cap: "round",
-              join: "round"
-            };
-            
-            // The route geometry contains the path that follows streets
-            const routeGeometry = result.routeResults[0].route.geometry;
-            
-            // Create and add graphics for the route
-            const routeOutlineGraphic = new Graphic({
-              geometry: routeGeometry,
-              symbol: routeOutlineSymbol,
-              attributes: { type: 'route-line-outline' }
-            });
-            
-            const routeLineGraphic = new Graphic({
-              geometry: routeGeometry,
-              symbol: routeLineSymbol,
-              attributes: { type: 'route-line' }
-            });
-            
-            // Add the route graphics to the map
-            if (routeGraphicsLayer) {
-              routeGraphicsLayer.add(routeOutlineGraphic);
-              routeGraphicsLayer.add(routeLineGraphic);
-            } else if (graphicsLayer) {
-              graphicsLayer.add(routeOutlineGraphic);
-              graphicsLayer.add(routeLineGraphic);
-            }
-            
-            // Extract route info (distance and time)
-            const routeInfo = result.routeResults[0].route.attributes;
-            
-            // Calculate walking time - typically 5x slower than driving
-            const drivingDistance = routeInfo.Total_Kilometers || 0;
-            const drivingDuration = Math.round(routeInfo.Total_Minutes) || 0;
-            const walkingDuration = Math.round(drivingDistance / 5 * 60); // Walking at ~5 km/h
-            
-            // Create route info objects for different travel modes
-            const routeInfos: RouteInfo[] = [
-              {
-                name: "Driving",
-                distance: Math.round(drivingDistance * 10) / 10,
-                duration: drivingDuration
-              },
-              {
-                name: "Walking",
-                distance: Math.round(drivingDistance * 10) / 10,
-                duration: walkingDuration
-              }
-            ];
-            
-            // Zoom to route with padding
-            view.goTo(routeGeometry.extent.expand(1.5), {
-              duration: 1000,
-              easing: "ease-out"
-            });
-            
-            // Notify parent component about routes
-            if (onRouteCalculated) {
-              onRouteCalculated(routeInfos);
-            }
-            
-            // Update internal state
-            setRouteResult(routeInfos);
-          } else {
-            throw new Error("No route found");
+          // Add to the map
+          if (routeGraphicsLayer) {
+            routeGraphicsLayer.add(outlineGraphic);
+            routeGraphicsLayer.add(lineGraphic);
+          } else if (graphicsLayer) {
+            graphicsLayer.add(outlineGraphic);
+            graphicsLayer.add(lineGraphic);
           }
-        } catch (err) {
-          console.error("Error in ArcGIS routing:", err);
-          // Fall back to direct line if routing service fails
-          drawFallbackRoute(destinationMarker);
+          
+          // Get route info
+          const routeInfo = result.routeResults[0].route.attributes;
+          const drivingDistance = routeInfo.Total_Kilometers || 0;
+          const drivingDuration = Math.round(routeInfo.Total_Minutes) || 0;
+          const walkingDuration = Math.round(drivingDistance / 5 * 60);
+          
+          // Create route info
+          const routeInfos: RouteInfo[] = [
+            {
+              name: "Driving",
+              distance: Math.round(drivingDistance * 10) / 10,
+              duration: drivingDuration
+            },
+            {
+              name: "Walking",
+              distance: Math.round(drivingDistance * 10) / 10,
+              duration: walkingDuration
+            }
+          ];
+          
+          // Zoom to show the route
+          view.goTo(routeGeometry.extent.expand(1.2), {
+            duration: 1000,
+            easing: "ease-out"
+          });
+          
+          // Notify parent component
+          if (onRouteCalculated) {
+            onRouteCalculated(routeInfos);
+          }
+          
+          // Update state
+          setRouteResult(routeInfos);
+        } else {
+          throw new Error("No route found");
         }
-      } else {
-        // If routing service isn't available, use fallback direct line method
-        console.log("Routing service not available, using fallback route");
+      } catch (error) {
+        console.error("Error with ArcGIS routing:", error);
+        // Fall back to direct line if routing service fails
         drawFallbackRoute(destinationMarker);
       }
     } catch (error) {
