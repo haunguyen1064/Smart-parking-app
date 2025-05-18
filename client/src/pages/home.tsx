@@ -20,6 +20,7 @@ export default function Home() {
   const [selectedParkingSpace, setSelectedParkingSpace] = useState<ParkingSpace | null>(null);
   const [routes, setRoutes] = useState<RouteInfo[] | null>(null);
   const [showRegisterForm, setShowRegisterForm] = useState(false);
+  const [activePanel, setActivePanel] = useState<"home" | "search" | "detail" | "booking" | "register">("home");
   
   // Get all parking lots
   const {
@@ -183,24 +184,50 @@ export default function Home() {
           />
         </div>
         
-        {/* Content panel is positioned over the map */}
-        <div className="absolute top-0 right-0 h-full z-10">
-          <ContentPanel
-            parkingLots={parkingLots}
-            isLoading={isParkingLotsLoading}
-            selectedParkingLot={selectedParkingLot}
-            setSelectedParkingLot={setSelectedParkingLot}
-            parkingSpaces={parkingSpaces}
-            isSpacesLoading={isParkingSpacesLoading}
-            selectedParkingSpace={selectedParkingSpace}
-            setSelectedParkingSpace={setSelectedParkingSpace}
-            onCreateBooking={createBooking}
-            isBookingLoading={false}
-            routes={routes || undefined}
-            onNavigate={handleNavigate}
-            onRegisterParking={() => setShowRegisterForm(true)}
-          />
-        </div>
+        {/* Home buttons directly on the map */}
+        {!selectedParkingLot && (
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 flex flex-col space-y-4 z-10">
+            <button 
+              className="bg-indigo-500 hover:bg-indigo-600 text-white font-medium py-3 px-6 rounded-full shadow-lg"
+              onClick={() => {
+                // Direct search button for a cleaner interface
+                const parkingLot = parkingLots?.[0];
+                if (parkingLot) {
+                  setSelectedParkingLot(parkingLot);
+                }
+              }}
+            >
+              Tìm bãi đỗ xe gần bạn
+            </button>
+            <button 
+              className="bg-indigo-500 hover:bg-indigo-600 text-white font-medium py-3 px-6 rounded-full shadow-lg"
+              onClick={() => setShowRegisterForm(true)}
+            >
+              Đăng ký bãi đỗ xe của bạn
+            </button>
+          </div>
+        )}
+        
+        {/* Content panel is positioned over the map only when needed */}
+        {selectedParkingLot && (
+          <div className="absolute top-0 right-0 h-full z-10">
+            <ContentPanel
+              parkingLots={parkingLots}
+              isLoading={isParkingLotsLoading}
+              selectedParkingLot={selectedParkingLot}
+              setSelectedParkingLot={setSelectedParkingLot}
+              parkingSpaces={parkingSpaces}
+              isSpacesLoading={isParkingSpacesLoading}
+              selectedParkingSpace={selectedParkingSpace}
+              setSelectedParkingSpace={setSelectedParkingSpace}
+              onCreateBooking={createBooking}
+              isBookingLoading={false}
+              routes={routes || undefined}
+              onNavigate={handleNavigate}
+              onRegisterParking={() => setShowRegisterForm(true)}
+            />
+          </div>
+        )}
       </main>
       
       {/* Register Parking Lot Form */}
