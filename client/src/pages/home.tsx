@@ -170,23 +170,7 @@ export default function Home() {
     <div className="flex flex-col min-h-screen">
       <Navbar />
       
-      {/* Home buttons overlay */}
-      {!selectedParkingLot && user && (
-        <div className="absolute top-24 right-8 z-20 flex flex-col space-y-2">
-          <Button 
-            className="rounded-full px-6 py-2 bg-indigo-400 text-white hover:bg-indigo-500"
-          >
-            Tìm bãi đỗ xe gần bạn
-          </Button>
-          
-          <Button 
-            className="rounded-full px-6 py-2 bg-indigo-400 text-white hover:bg-indigo-500"
-            onClick={() => setShowRegisterForm(true)}
-          >
-            Đăng ký bãi đỗ xe của bạn
-          </Button>
-        </div>
-      )}
+      {/* We don't need the buttons overlay anymore as they are now in the HomePanel */}
       
       <main className="flex-grow flex flex-col md:flex-row h-full">
         <SimpleMap
@@ -209,6 +193,7 @@ export default function Home() {
           isBookingLoading={false}
           routes={routes || undefined}
           onNavigate={handleNavigate}
+          onRegisterParking={() => setShowRegisterForm(true)}
         />
       </main>
       

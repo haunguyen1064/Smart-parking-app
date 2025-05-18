@@ -2,8 +2,10 @@ import { useState, useEffect } from "react";
 import SearchPanel from "./search-panel";
 import ParkingDetail from "./parking-detail";
 import BookingPanel from "./booking-panel";
+import HomePanel from "./home-panel";
 import { ParkingLot, ParkingSpace } from "@/hooks/use-parking";
 import { RouteInfo } from "./simple-map";
+import { useAuth } from "@/hooks/use-auth";
 
 type ContentPanelProps = {
   parkingLots: ParkingLot[] | undefined;
@@ -18,9 +20,10 @@ type ContentPanelProps = {
   isBookingLoading: boolean;
   routes?: RouteInfo[];
   onNavigate?: () => void;
+  onRegisterParking?: () => void;
 };
 
-type PanelType = "search" | "detail" | "booking";
+type PanelType = "home" | "search" | "detail" | "booking";
 
 export default function ContentPanel({
   parkingLots,
@@ -35,17 +38,22 @@ export default function ContentPanel({
   isBookingLoading,
   routes,
   onNavigate,
+  onRegisterParking
 }: ContentPanelProps) {
-  const [activePanel, setActivePanel] = useState<PanelType>("search");
+  const { user } = useAuth();
+  const [activePanel, setActivePanel] = useState<PanelType>(user ? "home" : "search");
   
   // Update active panel based on selection
   useEffect(() => {
     if (selectedParkingLot) {
       setActivePanel("detail");
-    } else {
+    } else if (user && activePanel !== "home") {
+      // Keep the current panel if it's not detail and not home
+      // Don't automatically go back to home when deselecting a parking lot
+    } else if (!user) {
       setActivePanel("search");
     }
-  }, [selectedParkingLot]);
+  }, [selectedParkingLot, user]);
   
   const handleBookNow = () => {
     setActivePanel("booking");
@@ -70,8 +78,21 @@ export default function ContentPanel({
     }
   };
   
+  // Function to handle home search button
+  const handleSearchParking = () => {
+    setActivePanel("search");
+  };
+
   return (
     <div className="w-full md:w-2/5 bg-white overflow-y-auto" id="content-panel">
+      {/* Home Panel */}
+      <div className={activePanel !== "home" ? "hidden" : ""}>
+        <HomePanel 
+          onSearchParking={handleSearchParking}
+          onRegisterParking={onRegisterParking || (() => {})}
+        />
+      </div>
+      
       {/* Search Panel */}
       <div className={activePanel !== "search" ? "hidden" : ""}>
         <SearchPanel 
@@ -90,7 +111,13 @@ export default function ContentPanel({
             parkingSpaces={parkingSpaces || []}
             isSpacesLoading={isSpacesLoading}
             onBookNow={handleBookNow}
-            onBack={() => setSelectedParkingLot(null)}
+            onBack={() => {
+              setSelectedParkingLot(null);
+              // If user is logged in, go back to home panel
+              if (user) {
+                setActivePanel("home");
+              }
+            }}
             onNavigate={onNavigate}
             routes={routes}
           />
