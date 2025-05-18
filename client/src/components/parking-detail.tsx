@@ -39,164 +39,104 @@ export default function ParkingDetail({
   const reservedCount = parkingSpaces.filter(space => space.status === "reserved").length;
   
   return (
-    <div className="border-t border-gray-200 p-4">
-      <div className="flex items-center mb-4">
-        <Button variant="ghost" size="sm" className="mr-2" onClick={onBack}>
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
-        <h2 className="text-xl font-semibold">{parkingLot.name}</h2>
-      </div>
-      
-      <div className="flex space-x-2 mb-4">
-        <Button variant="secondary" size="sm" className="rounded-full text-xs">
-          Chỗ trống
-        </Button>
-        <Button className="rounded-full text-xs" onClick={onBookNow}>
-          Đặt chỗ
-        </Button>
-        <Button 
-            variant="outline" 
-            size="sm" 
-            className="rounded-full text-xs flex items-center" 
-            onClick={onNavigate}
-          >
-            <Navigation className="h-3 w-3 mr-1" />
-            Chỉ đường
+    <div className="border-t border-gray-200 h-full flex flex-col overflow-hidden">
+      <div className="p-4 flex-shrink-0">
+        <div className="flex items-center mb-4">
+          <Button variant="ghost" size="sm" className="mr-2" onClick={onBack}>
+            <ArrowLeft className="h-4 w-4" />
           </Button>
-      </div>
-      
-      <div className="mb-4">
-        <div className="flex items-start space-x-2 mb-2">
-          <MapPin className="h-4 w-4 mt-1 text-gray-500" />
-          <p>{parkingLot.address}</p>
-        </div>
-        <div className="flex items-start space-x-2">
-          <Car className="h-4 w-4 mt-1 text-gray-500" />
-          <p>{availableCount} chỗ trống</p>
+          <h2 className="text-xl font-semibold">{parkingLot.name}</h2>
         </div>
         
-        {/* Route information section */}
-        {routes && routes.length > 0 && (
-          <div className="mt-4 border rounded-lg p-3 bg-blue-50">
-            <h3 className="font-medium text-blue-800 mb-2 flex items-center">
-              <Route className="h-4 w-4 mr-1" />
-              Tuyến đường từ vị trí của bạn
-            </h3>
-            
-            {routes.map((route, index) => (
-              <div 
-                key={index} 
-                className={`p-2 ${index === 0 ? 'bg-blue-100 rounded-md border border-blue-200' : ''} mb-2`}
+        <div className="mb-4">
+          <p className="text-gray-600 flex items-center mb-1">
+            <MapPin className="h-4 w-4 mr-1" /> {parkingLot.address}
+          </p>
+          <p className="text-gray-600 flex items-center mb-1">
+            <Clock className="h-4 w-4 mr-1" /> {parkingLot.openingHour} - {parkingLot.closingHour}
+          </p>
+          <p className="text-gray-600 flex items-center">
+            <Car className="h-4 w-4 mr-1" /> {parkingLot.availableSpots} chỗ trống / {parkingLot.totalSpots} chỗ
+          </p>
+          
+          {/* Navigation / Routing */}
+          {onNavigate && (
+            <div className="mt-4">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="w-full flex items-center justify-center"
+                onClick={onNavigate}
               >
-                <div className="flex justify-between items-center">
-                  <div className="font-medium">
-                    {index === 0 ? 'Tuyến đường được đề xuất' : `Tuyến đường ${index + 1}`}
+                <Navigation className="h-4 w-4 mr-2" />
+                Chỉ đường
+              </Button>
+              
+              {routes && routes.length > 0 && (
+                <div className="mt-2 space-y-2">
+                  <p className="text-sm font-medium">Các tuyến đường:</p>
+                  {routes.map((route, idx) => (
+                    <div key={idx} className="bg-gray-50 p-2 rounded-md text-sm">
+                      <div className="flex justify-between mb-1">
+                        <span className="font-medium">{route.name}</span>
+                        <span>{route.distance} km</span>
+                      </div>
+                      <div className="text-gray-500">
+                        Thời gian: {route.duration} phút
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+        
+        <div className="flex justify-between mb-4">
+          <div className="text-lg font-bold text-green-600">
+            {parkingLot.pricePerHour.toLocaleString('vi-VN')}đ / giờ
+          </div>
+          <Button onClick={onBookNow}>Đặt chỗ ngay</Button>
+        </div>
+      </div>
+      
+      <div className="p-4 overflow-y-auto flex-grow" style={{ maxHeight: "calc(100vh - 300px)" }}>
+        <Card>
+          <CardContent className="p-4">
+            <h3 className="text-lg font-medium mb-2">Sơ đồ chỗ đỗ xe</h3>
+            
+            {isSpacesLoading ? (
+              <p className="text-center py-8 text-gray-400">Đang tải sơ đồ...</p>
+            ) : parkingSpaces.length === 0 ? (
+              <p className="text-center py-8 text-gray-400">Không có thông tin về chỗ đỗ xe</p>
+            ) : (
+              <div className="space-y-4">
+                <div className="flex justify-between text-sm">
+                  <div className="flex items-center">
+                    <div className="w-3 h-3 rounded-full bg-green-500 mr-1"></div>
+                    <span>Trống ({availableCount})</span>
                   </div>
-                  {index === 0 && (
-                    <span className="bg-blue-500 text-white px-2 py-0.5 rounded-full text-xs">
-                      Tốt nhất
-                    </span>
-                  )}
+                  <div className="flex items-center">
+                    <div className="w-3 h-3 rounded-full bg-red-500 mr-1"></div>
+                    <span>Đã đỗ ({occupiedCount})</span>
+                  </div>
+                  <div className="flex items-center">
+                    <div className="w-3 h-3 rounded-full bg-yellow-500 mr-1"></div>
+                    <span>Đã đặt ({reservedCount})</span>
+                  </div>
                 </div>
                 
-                <div className="flex space-x-4 mt-1 text-sm">
-                  <div className="flex items-center">
-                    <Clock className="h-3 w-3 mr-1 text-gray-500" />
-                    <span>{route.duration} phút</span>
+                {Object.entries(groupedSpaces).map(([zone, spaces]) => (
+                  <div key={zone} className="mt-4">
+                    <h4 className="font-medium mb-2">Khu vực {zone}</h4>
+                    <ParkingSpotsLayout zone={zone} spaces={spaces} />
                   </div>
-                  <div>
-                    <span>{route.distance} km</span>
-                  </div>
-                </div>
+                ))}
               </div>
-            ))}
-            
-            <div className="text-xs text-gray-500 mt-2">
-              * Thời gian di chuyển có thể thay đổi tùy thuộc vào điều kiện giao thông
-            </div>
-          </div>
-        )}
+            )}
+          </CardContent>
+        </Card>
       </div>
-      
-      <div className="mb-4">
-        <h3 className="font-medium mb-2">Mô tả</h3>
-        <p className="text-gray-600">{parkingLot.description || "Không có mô tả"}</p>
-      </div>
-      
-      <div className="mb-4">
-        <h3 className="font-medium mb-2">Thời gian mở cửa</h3>
-        <p className="text-gray-600">{parkingLot.openingHour} - {parkingLot.closingHour}</p>
-      </div>
-      
-      <div className="mb-4">
-        <h3 className="font-medium mb-2">Giá</h3>
-        <p className="text-gray-600">{parkingLot.pricePerHour.toLocaleString('vi-VN')}đ/giờ</p>
-      </div>
-      
-      <div className="mb-4">
-        <h3 className="font-medium mb-2">Ảnh</h3>
-        <div className="relative">
-          <img 
-            src={parkingLot.images[0] || "https://images.unsplash.com/photo-1590674899484-13e8f7733e3d?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=400"}
-            alt={parkingLot.name} 
-            className="w-full h-48 object-cover rounded-lg"
-          />
-          {parkingLot.images.length > 1 && (
-            <div className="absolute bottom-2 right-2 bg-black bg-opacity-60 text-white px-2 py-1 rounded text-sm">
-              +{parkingLot.images.length - 1}
-            </div>
-          )}
-        </div>
-      </div>
-      
-      <div className="mb-4">
-        <h3 className="font-medium mb-2">Sơ đồ</h3>
-        
-        {isSpacesLoading ? (
-          <Card>
-            <CardContent className="p-4 h-48 flex items-center justify-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
-            </CardContent>
-          </Card>
-        ) : parkingSpaces.length === 0 ? (
-          <Card>
-            <CardContent className="p-4 text-center text-gray-500">
-              Không có thông tin về vị trí đỗ xe
-            </CardContent>
-          </Card>
-        ) : (
-          Object.entries(groupedSpaces).map(([zone, spaces]) => (
-            <div key={zone} className="mb-4">
-              <ParkingSpotsLayout 
-                zone={zone}
-                spaces={spaces}
-                selectable={false}
-              />
-            </div>
-          ))
-        )}
-        
-        <div className="flex space-x-4 mt-3">
-          <div className="flex items-center space-x-2">
-            <div className="w-3 h-3 bg-blue-500 rounded"></div>
-            <span className="text-sm text-gray-600">Chỗ trống</span>
-          </div>
-          <div className="flex items-center space-x-2">
-            <div className="w-3 h-3 bg-orange-500 rounded"></div>
-            <span className="text-sm text-gray-600">Đã sử dụng</span>
-          </div>
-          {reservedCount > 0 && (
-            <div className="flex items-center space-x-2">
-              <div className="w-3 h-3 bg-green-500 rounded"></div>
-              <span className="text-sm text-gray-600">Đã đặt trước</span>
-            </div>
-          )}
-        </div>
-      </div>
-      
-      <Button className="w-full" onClick={onBookNow}>
-        Đặt chỗ ngay
-      </Button>
     </div>
   );
 }
