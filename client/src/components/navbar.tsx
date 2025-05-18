@@ -1,7 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
-import { Car } from "lucide-react";
+import { Car, FileText, User } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 export function Navbar() {
   const { user, logout, isLoading } = useAuth();
@@ -25,29 +26,37 @@ export function Navbar() {
             <div className="flex items-center gap-4">
               {user.role === "owner" && (
                 <Link href="/owner/dashboard">
-                  <Button variant="outline" size="sm">
-                    Dashboard
+                  <Button variant="outline" size="sm" className="flex items-center gap-2">
+                    <FileText className="h-4 w-4" />
+                    <span className="hidden md:inline">Quản lý bãi đỗ xe</span>
                   </Button>
                 </Link>
               )}
-              <div className="text-sm hidden md:block">
-                <span className="text-gray-600">Welcome, </span>
-                <span className="font-medium">{user.fullName}</span>
+              
+              <div className="flex items-center gap-2">
+                <Avatar className="h-8 w-8 bg-gray-200">
+                  <AvatarImage src="" alt={user.fullName} />
+                  <AvatarFallback className="bg-primary text-white text-xs">
+                    {user.fullName.split(' ').map(n => n[0]).join('')}
+                  </AvatarFallback>
+                </Avatar>
+                <span className="text-sm font-medium text-gray-700">{user.fullName}</span>
+                <Button onClick={() => logout()} variant="ghost" size="sm" className="text-gray-500">
+                  <User className="h-4 w-4 mr-1" />
+                  <span className="hidden md:inline">Đăng xuất</span>
+                </Button>
               </div>
-              <Button onClick={() => logout()} variant="ghost" size="sm">
-                Logout
-              </Button>
             </div>
           ) : (
             <div className="flex items-center gap-2">
               <Link href="/login">
                 <Button variant="ghost" size="sm">
-                  Login
+                  Đăng nhập
                 </Button>
               </Link>
               <Link href="/signup">
                 <Button variant="default" size="sm" className="bg-primary text-white hover:bg-primary/90">
-                  Sign Up
+                  Đăng ký
                 </Button>
               </Link>
             </div>
