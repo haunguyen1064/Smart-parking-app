@@ -673,7 +673,7 @@ export default function SimpleMap({
   }
 
   return (
-    <div className="w-full h-full relative bg-gray-100">
+    <div className="w-full md:w-3/5 h-[50vh] md:h-[calc(100vh-56px)] relative bg-gray-100">
       {/* Map container */}
       <div ref={mapDiv} className="absolute inset-0" />
       
