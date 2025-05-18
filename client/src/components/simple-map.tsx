@@ -71,7 +71,7 @@ export default function SimpleMap({
         
         // Configure map with a basemap optimized for street navigation
         const map = new Map({
-          basemap: "streets" // Use a street-focused basemap
+          basemap: "streets-vector" // Use the recommended streets-vector basemap
         });
         
         // Create graphics layer for markers

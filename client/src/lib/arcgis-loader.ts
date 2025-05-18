@@ -37,7 +37,7 @@ export async function createMap(container: HTMLDivElement, center: [number, numb
     const [Map, MapView] = await esriLoadModules(["esri/Map", "esri/views/MapView"]);
     
     const map = new Map({
-      basemap: "streets-navigation-vector"
+      basemap: "streets-vector"
     });
     
     const view = new MapView({
