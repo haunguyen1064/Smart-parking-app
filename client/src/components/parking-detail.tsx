@@ -40,7 +40,7 @@ export default function ParkingDetail({
   const reservedCount = parkingSpaces.filter(space => space.status === "reserved").length;
   
   return (
-    <div className="border-t border-gray-200 h-full flex flex-col overflow-hidden">
+    <div className="border-t border-gray-200 h-full flex flex-col overflow-y-auto">
       <div className="p-4 flex-shrink-0">
         <div className="flex items-center mb-4">
           <Button variant="ghost" size="sm" className="mr-2" onClick={onBack}>
@@ -101,7 +101,7 @@ export default function ParkingDetail({
         </div>
       </div>
       
-      <div className="p-4 overflow-y-auto flex-grow" style={{ maxHeight: "calc(100vh - 300px)" }}>
+      <div className="p-4 flex-grow">
         <Tabs defaultValue="slots">
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="slots">Sơ đồ</TabsTrigger>
