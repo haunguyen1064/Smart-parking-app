@@ -180,18 +180,18 @@ export default function Home() {
         />
         
         {/* Floating buttons in top-right corner */}
-        <div className="absolute top-20 right-6 z-10">
+        <div className="fixed top-20 right-6 z-30">
           <div className="bg-white bg-opacity-90 backdrop-blur-sm rounded-lg p-4 shadow-lg">
             <div className="flex flex-col space-y-2">
               <Button 
-                className="rounded-md px-4 py-2 bg-indigo-500 text-white hover:bg-indigo-600 w-full"
+                className="rounded-full px-4 py-2 bg-indigo-500 text-white hover:bg-indigo-600 w-full"
                 onClick={() => setSelectedParkingLot(null)}
               >
                 Tìm bãi đỗ xe gần bạn
               </Button>
               
               <Button 
-                className="rounded-md px-4 py-2 bg-indigo-500 text-white hover:bg-indigo-600 w-full"
+                className="rounded-full px-4 py-2 bg-indigo-500 text-white hover:bg-indigo-600 w-full"
                 onClick={() => setShowRegisterForm(true)}
               >
                 Đăng ký bãi đỗ xe của bạn

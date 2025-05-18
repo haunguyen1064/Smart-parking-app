@@ -4,11 +4,11 @@ import { useAuth } from "@/hooks/use-auth";
 import { Car, FileText, User } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
-export function Navbar() {
+export function Navbar({ className = "" }) {
   const { user, logout, isLoading } = useAuth();
   
   return (
-    <header className="bg-white shadow-sm">
+    <header className={`bg-white shadow-sm ${className}`}>
       <div className="container mx-auto px-4 py-3 flex items-center justify-between">
         <Link href="/">
           <div className="flex items-center space-x-2">
