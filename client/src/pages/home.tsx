@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Navbar } from "@/components/navbar";
 import SimpleMap, { ParkingLotMarker, RouteInfo } from "@/components/simple-map";
@@ -74,23 +74,34 @@ export default function Home() {
     }
   };
   
-  // Handle navigation request
+  // Reference to the map component
+  const mapRef = useRef<any>(null);
+  
+  // Handle navigation request - direct navigation without requiring second click
   const handleNavigate = () => {
-    // Map component will handle the actual navigation calculation when user clicks the navigation button on the map
+    if (!selectedParkingLot) return;
+    
+    // Show loading toast
     toast({
-      title: "Hướng dẫn chỉ đường",
-      description: "Nhấn vào nút chỉ đường trên bản đồ để tính toán tuyến đường từ vị trí của bạn đến bãi đỗ xe.",
+      title: "Đang tính toán tuyến đường",
+      description: "Vui lòng đợi trong khi chúng tôi tính toán tuyến đường tốt nhất.",
     });
     
-    // Get user location if not already available
+    // Get user location
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
-        () => {
-          // Position obtained successfully 
-          toast({
-            title: "Đã tìm thấy vị trí của bạn",
-            description: "Bạn có thể tính toán tuyến đường bằng cách nhấn vào nút chỉ đường trên bản đồ.",
-          });
+        (position) => {
+          // Position obtained successfully
+          // Call the map's navigation function directly
+          if (mapRef.current && typeof mapRef.current.navigateToSelectedMarker === 'function') {
+            mapRef.current.navigateToSelectedMarker();
+          } else {
+            toast({
+              title: "Không thể tính toán tuyến đường",
+              description: "Có lỗi xảy ra khi tính toán tuyến đường. Vui lòng thử lại sau.",
+              variant: "destructive",
+            });
+          }
         },
         (error) => {
           // Handle error getting location
@@ -99,6 +110,11 @@ export default function Home() {
             description: "Vui lòng cho phép truy cập vị trí để sử dụng tính năng chỉ đường.",
             variant: "destructive",
           });
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 5000,
+          maximumAge: 0
         }
       );
     } else {

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useImperativeHandle, forwardRef } from "react";
 import { Plus, Minus, Navigation } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { loadModules, loadCss } from "esri-loader";

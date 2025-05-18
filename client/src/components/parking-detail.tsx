@@ -54,8 +54,7 @@ export default function ParkingDetail({
         <Button className="rounded-full text-xs" onClick={onBookNow}>
           Đặt chỗ
         </Button>
-        {onNavigate && (
-          <Button 
+        <Button 
             variant="outline" 
             size="sm" 
             className="rounded-full text-xs flex items-center" 
@@ -64,7 +63,6 @@ export default function ParkingDetail({
             <Navigation className="h-3 w-3 mr-1" />
             Chỉ đường
           </Button>
-        )}
       </div>
       
       <div className="mb-4">
