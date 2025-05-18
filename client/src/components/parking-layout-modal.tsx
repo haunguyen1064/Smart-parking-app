@@ -108,12 +108,46 @@ export default function ParkingLayoutModal({
     }
   };
   
+  // Store the initial state when the modal opens
+  const [savedState, setSavedState] = useState<ParkingLayoutConfig | null>(null);
+
+  // Reset to the initial state when opened
+  useEffect(() => {
+    if (isOpen) {
+      // Reset to initial/default state if no saved state exists
+      if (!savedState) {
+        setLayoutName("");
+        setRowCount(1);
+        setSelectedRowIndex(0);
+        setRowConfigs([]);
+      }
+    }
+  }, [isOpen, savedState]);
+  
   // Handle confirmation
   const handleConfirm = () => {
-    onConfirm({
+    const newConfig = {
       name: layoutName,
       rows: rowConfigs,
-    });
+    };
+    
+    // Save the confirmed state
+    setSavedState(newConfig);
+    
+    onConfirm(newConfig);
+    onClose();
+  };
+  
+  // Handle cancel - reset to saved state
+  const handleCancel = () => {
+    // Reset to saved state if it exists
+    if (savedState) {
+      setLayoutName(savedState.name);
+      setRowCount(savedState.rows.length);
+      setRowConfigs([...savedState.rows]);
+      setSelectedRowIndex(0);
+    }
+    
     onClose();
   };
   
@@ -142,11 +176,11 @@ export default function ParkingLayoutModal({
             <Input
               id="row-count"
               type="number"
-              min={1}
+              min={0}
               max={10}
               value={rowCount}
-              onChange={(e) => setRowCount(Math.max(1, parseInt(e.target.value) || 1))}
-              placeholder="Nhập số hàng (1-10)"
+              onChange={(e) => setRowCount(Math.max(0, parseInt(e.target.value)))}
+              placeholder="Nhập số hàng"
             />
           </div>
           
@@ -242,7 +276,7 @@ export default function ParkingLayoutModal({
         </div>
         
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>Hủy</Button>
+          <Button variant="outline" onClick={handleCancel}>Hủy</Button>
           <Button onClick={handleConfirm}>Xác nhận</Button>
         </DialogFooter>
       </DialogContent>
