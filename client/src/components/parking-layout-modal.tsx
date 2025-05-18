@@ -119,7 +119,7 @@ export default function ParkingLayoutModal({
   
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-xl">Thêm sơ đồ</DialogTitle>
         </DialogHeader>
@@ -201,7 +201,7 @@ export default function ParkingLayoutModal({
           {/* Layout preview */}
           <div>
             <Label className="block mb-2">Xem trước sơ đồ</Label>
-            <div className="border rounded-md p-4 min-h-[200px]">
+            <div className="border rounded-md p-4 max-h-[250px] overflow-y-auto">
               {rowConfigs.map((row, rowIndex) => (
                 <div key={rowIndex} className="flex flex-wrap gap-2 mb-2">
                   {Array.from({ length: row.slotCount }).map((_, slotIndex) => (
