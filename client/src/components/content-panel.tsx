@@ -44,17 +44,12 @@ export default function ContentPanel({
   const { user } = useAuth();
   const [activePanel, setActivePanel] = useState<PanelType>("home");
   
-  // Update active panel based on selection
+  // Update active panel only when a parking lot is selected
   useEffect(() => {
     if (selectedParkingLot) {
       setActivePanel("detail");
-    } else if (user && activePanel !== "home") {
-      // Keep the current panel if it's not detail and not home
-      // Don't automatically go back to home when deselecting a parking lot
-    } else if (!user) {
-      setActivePanel("search");
     }
-  }, [selectedParkingLot, user]);
+  }, [selectedParkingLot]);
   
   const handleBookNow = () => {
     setActivePanel("booking");
