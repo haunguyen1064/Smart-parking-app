@@ -470,11 +470,46 @@ export default function SimpleMap({
             }
           ];
           
-          // Zoom to show the route
-          view.goTo(route.geometry.extent.expand(1.2), {
-            duration: 1000,
-            easing: "ease-out"
-          });
+          // Safely zoom to show the route, handling potential geometry issues
+          try {
+            if (route.geometry && route.geometry.extent) {
+              view.goTo({
+                target: route.geometry,
+                padding: {
+                  top: 50,
+                  bottom: 50,
+                  left: 50,
+                  right: 50
+                }
+              }, {
+                duration: 1000,
+                easing: "ease-out"
+              });
+            } else {
+              // Fallback zooming to both points if extent isn't available
+              view.goTo({
+                target: [{
+                  type: "point",
+                  longitude: startLng,
+                  latitude: startLat
+                }, {
+                  type: "point",
+                  longitude: endLng,
+                  latitude: endLat
+                }],
+                padding: {
+                  top: 100,
+                  bottom: 100,
+                  left: 100,
+                  right: 100
+                }
+              });
+            }
+          } catch (err) {
+            console.warn("Error zooming to route:", err);
+            // Fallback to simpler zoom method
+            view.zoom = 13;
+          }
           
           // Notify parent component about routes
           if (onRouteCalculated) {
