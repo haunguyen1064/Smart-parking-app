@@ -19,8 +19,8 @@ export async function loadModules() {
   ], {
     css: true
   }).then(([esriConfig]) => {
-    // Configure API key (using an environment variable if available)
-    esriConfig.apiKey = process.env.ARCGIS_API_KEY || "AAPK1a5d8a2f9d5f43e19e33f908c7a51efeVPxH7nQGheLNYD2jy67_4oEFjqZnWyYHGgI2uxUMdMtAJCz6sNZpMvPHEXGudajL";
+    // Configure API key
+    esriConfig.apiKey = "AAPTxy8BH1VEsoebNVZXo8HurJoE9iZ23rcLOCKv4LGb2GWB9M7bDmsO8WzljuTlRGXy2NEKygbZEcMd4NYx-tHCiaqPjA9ONpdFDEffSKRJagdQr7A8hbXH0idSNA9UeafnN_wTxbonRF19Xdfrr5hzrmSsNdTQgqz0QYvTa9I4hPrd_kqlnIACRyteJaKtWhQqqnu1uwmw-NRYPsktPk-gRzfNv-09JB2MXLhU3DiEELI";
     
     // Set portal URL if using a custom portal
     // esriConfig.portalUrl = "https://yourportal.domain.com/arcgis";

@@ -543,6 +543,9 @@ export default function OwnerDashboard() {
               {/* Delete Confirmation Dialog */}
               <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
                 <DialogContent className="sm:max-w-md p-0 border-0">
+                  <DialogHeader className="sr-only">
+                    <DialogTitle>Xác nhận xóa</DialogTitle>
+                  </DialogHeader>
                   <div className="text-center py-8 px-1">
                     <h2 className="text-2xl">
                       Bạn có chắc muốn xóa{" "}
