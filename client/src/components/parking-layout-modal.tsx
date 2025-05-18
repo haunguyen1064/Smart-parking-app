@@ -119,12 +119,12 @@ export default function ParkingLayoutModal({
   
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-lg max-h-[90vh] min-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-lg max-h-[90vh] min-h-[90vh]">
         <DialogHeader>
           <DialogTitle className="text-xl">Thêm sơ đồ</DialogTitle>
         </DialogHeader>
         
-        <div className="space-y-4 mt-4">
+        <div className="space-y-4 mt-1">
           {/* Layout name */}
           <div>
             <Label htmlFor="layout-name">Tên sơ đồ</Label>
@@ -176,7 +176,9 @@ export default function ParkingLayoutModal({
               
               {/* Slot count */}
               <div>
+                <Label htmlFor="slot-count" className="text-xs mb-1 block">Số chỗ</Label>
                 <Input
+                  id="slot-count"
                   type="number"
                   min={1}
                   max={20}
@@ -188,7 +190,9 @@ export default function ParkingLayoutModal({
               
               {/* Prefix */}
               <div>
+                <Label htmlFor="row-prefix" className="text-xs mb-1 block">Ký hiệu</Label>
                 <Input
+                  id="row-prefix"
                   placeholder="Nhập ký hiệu (A-Z,1-9)"
                   value={rowConfigs[selectedRowIndex]?.prefix || ""}
                   onChange={(e) => handlePrefixChange(e.target.value)}
@@ -201,7 +205,7 @@ export default function ParkingLayoutModal({
           {/* Layout preview */}
           <div>
             <Label className="block mb-2">Xem trước sơ đồ</Label>
-            <div className="border rounded-md p-4 max-h-[320px] min-h-[320px] overflow-y-auto">
+            <div className="border rounded-md p-4 h-[450px] w-[580px] overflow-auto">
               {rowConfigs.length > 0 ? (
                 rowConfigs.map((row, rowIndex) => (
                   <div key={rowIndex} className="mb-3">
@@ -213,7 +217,7 @@ export default function ParkingLayoutModal({
                         {row.prefix} ({row.slotCount} chỗ)
                       </div>
                     </div>
-                    <div className="overflow-x-auto pb-2">
+                    <div className="pb-2">
                       <div className="flex gap-2 min-w-fit">
                         {Array.from({ length: row.slotCount }).map((_, slotIndex) => (
                           <div
@@ -236,7 +240,7 @@ export default function ParkingLayoutModal({
           </div>
         </div>
         
-        <DialogFooter className="mt-4">
+        <DialogFooter>
           <Button variant="outline" onClick={onClose}>Hủy</Button>
           <Button onClick={handleConfirm}>Xác nhận</Button>
         </DialogFooter>
