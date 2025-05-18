@@ -130,6 +130,8 @@ export default function OwnerDashboard() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [parkingLotToDelete, setParkingLotToDelete] = useState<ParkingLot | null>(null);
   const [newParkingLotData, setNewParkingLotData] = useState({
     name: "",
     address: "",
@@ -214,12 +216,34 @@ export default function OwnerDashboard() {
     });
   };
 
-  // Handle delete parking lot
-  const handleDeleteParkingLot = (id: number) => {
-    // Show confirmation dialog in a real app
+  // Open delete confirmation dialog
+  const openDeleteDialog = (lot: ParkingLot) => {
+    setParkingLotToDelete(lot);
+    setIsDeleteDialogOpen(true);
+  };
+
+  // Handle delete parking lot after confirmation
+  const handleDeleteParkingLot = () => {
+    if (!parkingLotToDelete) return;
+    
+    // Demo: Remove from mocked array
+    const index = mockParkingLots.findIndex(lot => lot.id === parkingLotToDelete.id);
+    if (index !== -1) {
+      mockParkingLots.splice(index, 1);
+    }
+    
+    // Close dialog and show success message
+    setIsDeleteDialogOpen(false);
+    setParkingLotToDelete(null);
+    
     toast({
       title: "Xóa thành công",
       description: "Bãi đỗ xe đã được xóa khỏi hệ thống.",
+    });
+    
+    // Refresh data
+    queryClient.invalidateQueries({
+      queryKey: ["/api/owner/parking-lots"],
     });
   };
 
@@ -506,7 +530,7 @@ export default function OwnerDashboard() {
                           <Edit className="h-4 w-4 mr-1" />
                           <span>Chỉnh sửa</span>
                         </Button>
-                        <Button variant="ghost" size="sm" className="text-red-600" onClick={() => handleDeleteParkingLot(lot.id)}>
+                        <Button variant="ghost" size="sm" className="text-red-600" onClick={() => openDeleteDialog(lot)}>
                           <Trash2 className="h-4 w-4 mr-1" />
                           <span>Xóa</span>
                         </Button>
@@ -515,6 +539,38 @@ export default function OwnerDashboard() {
                   </Card>
                 ))}
               </div>
+              
+              {/* Delete Confirmation Dialog */}
+              <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+                <DialogContent className="sm:max-w-md p-0 border-0">
+                  <div className="text-center py-8 px-1">
+                    <h2 className="text-2xl">
+                      Bạn có chắc muốn xóa{" "}
+                      <span className="font-bold">
+                        {parkingLotToDelete?.name}
+                      </span>
+                      ?
+                    </h2>
+                    
+                    <div className="mt-8 flex justify-center gap-4">
+                      <Button 
+                        variant="destructive" 
+                        className="bg-red-500 hover:bg-red-600 px-12"
+                        onClick={handleDeleteParkingLot}
+                      >
+                        OK
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        className="px-10 border-blue-500 text-blue-500"
+                        onClick={() => setIsDeleteDialogOpen(false)}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
             </>
           )}
         </div>
