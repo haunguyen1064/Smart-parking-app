@@ -201,19 +201,28 @@ export default function ParkingLayoutModal({
           {/* Layout preview */}
           <div>
             <Label className="block mb-2">Xem trước sơ đồ</Label>
-            <div className="border rounded-md p-4 max-h-[250px] overflow-y-auto">
-              {rowConfigs.map((row, rowIndex) => (
-                <div key={rowIndex} className="flex flex-wrap gap-2 mb-2">
-                  {Array.from({ length: row.slotCount }).map((_, slotIndex) => (
-                    <div
-                      key={slotIndex}
-                      className="w-12 h-16 rounded-md bg-blue-500 text-white flex items-center justify-center font-medium"
-                    >
-                      {row.prefix}{slotIndex + 1}
+            <div className="border rounded-md p-4 max-h-[300px] min-h-[200px] overflow-y-auto">
+              {rowConfigs.length > 0 ? (
+                rowConfigs.map((row, rowIndex) => (
+                  <div key={rowIndex} className="flex flex-wrap gap-2 mb-3">
+                    <div className="w-8 h-16 flex items-center justify-center text-gray-500 font-medium mr-1">
+                      {rowIndex + 1}:
                     </div>
-                  ))}
+                    {Array.from({ length: row.slotCount }).map((_, slotIndex) => (
+                      <div
+                        key={slotIndex}
+                        className="w-12 h-16 rounded-md bg-blue-500 text-white flex items-center justify-center font-medium shadow-sm"
+                      >
+                        {row.prefix}{slotIndex + 1}
+                      </div>
+                    ))}
+                  </div>
+                ))
+              ) : (
+                <div className="h-full flex items-center justify-center text-gray-400">
+                  Thêm hàng để xem trước sơ đồ
                 </div>
-              ))}
+              )}
             </div>
           </div>
         </div>
