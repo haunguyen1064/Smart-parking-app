@@ -205,7 +205,7 @@ export default function ParkingLayoutModal({
               {rowConfigs.length > 0 ? (
                 rowConfigs.map((row, rowIndex) => (
                   <div key={rowIndex} className="flex flex-wrap gap-2 mb-3">
-                    <div className="w-8 h-16 flex items-center justify-center text-gray-500 font-medium mr-1">
+                    <div className="w-5 h-16 flex items-center justify-center text-gray-500 text-xs mr-1">
                       {rowIndex + 1}:
                     </div>
                     {Array.from({ length: row.slotCount }).map((_, slotIndex) => (
