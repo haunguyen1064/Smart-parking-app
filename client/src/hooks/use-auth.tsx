@@ -43,6 +43,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [, navigate] = useLocation();
   const { toast } = useToast();
   
+  // Modified to work with our demo authentication
   const {
     data: user,
     isLoading,
@@ -50,21 +51,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     refetch,
   } = useQuery<User | null>({
     queryKey: ["/api/auth/me"],
-    queryFn: async ({ queryKey }) => {
+    queryFn: async () => {
+      // For demo purposes, manually check if user is logged in
+      // This would normally be a server API call
       try {
-        const res = await fetch(queryKey[0] as string, {
-          credentials: "include",
-        });
-        
-        if (res.status === 401) {
-          return null;
+        // Get authentication from localStorage (demo only)
+        const storedUser = localStorage.getItem('demoUser');
+        if (storedUser) {
+          return JSON.parse(storedUser);
         }
-        
-        if (!res.ok) {
-          throw new Error(`${res.status}: ${res.statusText}`);
-        }
-        
-        return await res.json();
+        return null;
       } catch (error) {
         console.error("Authentication error:", error);
         return null;
@@ -74,14 +70,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   
   const loginMutation = useMutation({
     mutationFn: async (credentials: LoginCredentials) => {
-      const res = await apiRequest("POST", "/api/auth/login", credentials);
-      return await res.json();
+      // For demo purposes - hardcoded successful login when username is "hau" and password is "123"
+      if (credentials.username === "hau" && credentials.password === "123") {
+        // Successful login response
+        const userData = {
+          id: 1,
+          username: "hau",
+          email: "hau@example.com",
+          fullName: "Hau Nguyen",
+          role: "user",
+          phoneNumber: "123456789"
+        };
+        
+        // Store user data in localStorage for our demo persistence
+        localStorage.setItem('demoUser', JSON.stringify(userData));
+        
+        return userData;
+      } else {
+        // Failed login
+        throw new Error("Email hoặc mật khẩu không đúng");
+      }
     },
     onSuccess: (data) => {
       queryClient.setQueryData(["/api/auth/me"], data);
       toast({
-        title: "Logged in successfully",
-        description: `Welcome back, ${data.fullName}!`,
+        title: "Đăng nhập thành công",
+        description: `Chào mừng quay trở lại, ${data.fullName}!`,
       });
       
       // Redirect to appropriate page based on role
@@ -93,7 +107,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
     onError: (error: Error) => {
       toast({
-        title: "Login failed",
+        title: "Đăng nhập thất bại",
         description: error.message,
         variant: "destructive",
       });
@@ -130,19 +144,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   
   const logoutMutation = useMutation({
     mutationFn: async () => {
-      const res = await apiRequest("POST", "/api/auth/logout", {});
-      return await res.json();
+      // For demo purposes, simply clear localStorage
+      localStorage.removeItem('demoUser');
+      return { success: true };
     },
     onSuccess: () => {
       queryClient.setQueryData(["/api/auth/me"], null);
       toast({
-        title: "Logged out successfully",
+        title: "Đăng xuất thành công",
       });
       navigate("/");
     },
     onError: (error: Error) => {
       toast({
-        title: "Logout failed",
+        title: "Đăng xuất thất bại",
         description: error.message,
         variant: "destructive",
       });
