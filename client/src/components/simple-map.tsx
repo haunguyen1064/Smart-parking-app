@@ -94,6 +94,9 @@ export default function SimpleMap({
             right: 10,
             bottom: 10,
             left: 10
+          },
+          ui: {
+            components: ["attribution"] // Remove default zoom buttons, keep only attribution
           }
         });
         
@@ -491,7 +494,7 @@ export default function SimpleMap({
         view.goTo(extent, {
           duration: 1000,
           easing: "ease-out"
-        }).catch(err => console.warn(err));
+        }).catch((err) => console.warn('Map navigation error:', err));
         
         // Notify parent component about routes
         if (onRouteCalculated) {
@@ -572,22 +575,22 @@ export default function SimpleMap({
       )}
       
       {/* Map controls */}
-      <div className="absolute right-4 bottom-24 flex flex-col space-y-2 z-10">
+      <div className="absolute right-4 bottom-24 flex flex-col space-y-3 z-10">
         <Button 
           variant="default" 
           size="icon" 
-          className="rounded-md bg-white text-gray-800 hover:bg-gray-100 shadow-md" 
+          className="h-10 w-10 rounded-full bg-white text-gray-800 hover:bg-gray-100 shadow-lg border border-gray-200" 
           onClick={handleZoomIn}
         >
-          <Plus className="h-4 w-4" />
+          <Plus className="h-5 w-5" />
         </Button>
         <Button 
           variant="default" 
           size="icon" 
-          className="rounded-md bg-white text-gray-800 hover:bg-gray-100 shadow-md" 
+          className="h-10 w-10 rounded-full bg-white text-gray-800 hover:bg-gray-100 shadow-lg border border-gray-200" 
           onClick={handleZoomOut}
         >
-          <Minus className="h-4 w-4" />
+          <Minus className="h-5 w-5" />
         </Button>
         
         {/* Navigation button (only shown when a parking lot is selected and user location is available) */}
@@ -595,11 +598,12 @@ export default function SimpleMap({
           <Button 
             variant="default" 
             size="icon" 
-            className="rounded-md bg-blue-600 text-white hover:bg-blue-700 shadow-md" 
+            className="h-10 w-10 rounded-full bg-blue-600 text-white hover:bg-blue-700 shadow-lg" 
             onClick={navigateToSelectedMarker}
             disabled={isCalculatingRoute}
+            title="Navigate to this parking lot"
           >
-            <Navigation className="h-4 w-4" />
+            <Navigation className="h-5 w-5" />
           </Button>
         )}
       </div>
