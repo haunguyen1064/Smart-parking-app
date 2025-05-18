@@ -391,135 +391,147 @@ export default function SimpleMap({
         routeGraphicsLayer.removeAll();
       }
       
-      // Use our routing service with the ArcGIS API key
+      // Use a better street-following route approach
       try {
-        // First, try to load the RouteTask module
-        const [RouteTask, RouteParameters, Point, Graphic, FeatureSet] = await loadModules([
-          "esri/tasks/RouteTask",
-          "esri/tasks/support/RouteParameters",
+        // Load required modules
+        const [Point, Graphic, esriRequest] = await loadModules([
           "esri/geometry/Point",
           "esri/Graphic",
-          "esri/tasks/support/FeatureSet"
+          "esri/request"
         ]);
-        
-        // Create a route task with the routing service
-        const routeTask = new RouteTask({
-          url: "https://route-api.arcgis.com/arcgis/rest/services/World/Route/NAServer/Route_World"
-        });
-        
-        // Create start and end points
-        const startPoint = new Point({
-          longitude: userLocation[0],
-          latitude: userLocation[1]
-        });
-        
-        const endPoint = new Point({
-          longitude: parseFloat(destinationMarker.longitude),
-          latitude: parseFloat(destinationMarker.latitude)
-        });
-        
-        // Create a feature set for the stops
-        const stopsFeatureSet = new FeatureSet({
-          features: [
-            new Graphic({ geometry: startPoint }),
-            new Graphic({ geometry: endPoint })
-          ]
-        });
-        
-        // Set route parameters
-        const routeParams = new RouteParameters({
-          stops: stopsFeatureSet,
-          returnRoutes: true,
-          returnDirections: true,
-          directionsLanguage: "vi"
-        });
-        
-        // Get the route
-        const result = await routeTask.solve(routeParams);
-        
-        if (result.routeResults && result.routeResults.length > 0) {
-          // Create street-following route
-          const routeGeometry = result.routeResults[0].route.geometry;
           
-          // Create symbols for the route
-          const outlineSymbol = {
-            type: "simple-line",
-            color: [255, 255, 255, 0.5],
-            width: 9,
-            style: "solid",
-            cap: "round",
-            join: "round"
-          };
+        // Start and end locations
+        const startLat = userLocation[1];
+        const startLng = userLocation[0];
+        const endLat = parseFloat(destinationMarker.latitude);
+        const endLng = parseFloat(destinationMarker.longitude);
           
-          const lineSymbol = {
-            type: "simple-line",
-            color: [0, 132, 255, 0.8],
-            width: 6,
-            style: "solid",
-            cap: "round",
-            join: "round"
-          };
+        console.log(`Calculating route from [${startLat},${startLng}] to [${endLat},${endLng}]`);
           
-          // Create graphics for the route
-          const outlineGraphic = new Graphic({
-            geometry: routeGeometry,
-            symbol: outlineSymbol,
-            attributes: { type: 'route-line-outline' }
-          });
+        // Make a direct request to the ArcGIS route service
+        const routeUrl = "https://route-api.arcgis.com/arcgis/rest/services/World/Route/NAServer/Route_World/solve";
           
-          const lineGraphic = new Graphic({
-            geometry: routeGeometry,
-            symbol: lineSymbol,
-            attributes: { type: 'route-line' }
-          });
-          
-          // Add to the map
-          if (routeGraphicsLayer) {
-            routeGraphicsLayer.add(outlineGraphic);
-            routeGraphicsLayer.add(lineGraphic);
-          } else if (graphicsLayer) {
-            graphicsLayer.add(outlineGraphic);
-            graphicsLayer.add(lineGraphic);
+        // Set up the request parameters
+        const requestOptions = {
+          query: {
+            f: "json",
+            token: "AAPTxy8BH1VEsoebNVZXo8HurJoE9iZ23rcLOCKv4LGb2GWB9M7bDmsO8WzljuTlRGXy2NEKygbZEcMd4NYx-tHCiaqPjA9ONpdFDEffSKRJagdQr7A8hbXH0idSNA9UeafnN_wTxbonRF19Xdfrr5hzrmSsNdTQgqz0QYvTa9I4hPrd_kqlnIACRyteJaKtWhQqqnu1uwmw-NRYPsktPk-gRzfNv-09JB2MXLhU3DiEELI",
+            stops: `${startLng},${startLat};${endLng},${endLat}`,
+            returnDirections: true,
+            directionsLanguage: "vi",
+            returnRoutes: true,
+            returnZ: false,
+            returnM: false
           }
+        };
           
-          // Get route info
-          const routeInfo = result.routeResults[0].route.attributes;
-          const drivingDistance = routeInfo.Total_Kilometers || 0;
-          const drivingDuration = Math.round(routeInfo.Total_Minutes) || 0;
-          const walkingDuration = Math.round(drivingDistance / 5 * 60);
+        try {
+          // Make the request
+          const response = await esriRequest(routeUrl, requestOptions);
           
-          // Create route info
-          const routeInfos: RouteInfo[] = [
-            {
-              name: "Driving",
-              distance: Math.round(drivingDistance * 10) / 10,
-              duration: drivingDuration
-            },
-            {
-              name: "Walking",
-              distance: Math.round(drivingDistance * 10) / 10,
-              duration: walkingDuration
+          if (response.data && response.data.routes && response.data.routes.features && response.data.routes.features.length > 0) {
+            // Get the route path
+            const routePath = response.data.routes.features[0].geometry;
+              
+            // Create symbols for the route
+            const outlineSymbol = {
+              type: "simple-line",
+              color: [255, 255, 255, 0.5],
+              width: 9,
+              style: "solid",
+              cap: "round",
+              join: "round"
+            };
+              
+            const lineSymbol = {
+              type: "simple-line",
+              color: [0, 132, 255, 0.8],
+              width: 6,
+              style: "solid",
+              cap: "round",
+              join: "round"
+            };
+              
+            // Create graphics for the route
+            const outlineGraphic = new Graphic({
+              geometry: routePath,
+              symbol: outlineSymbol,
+              attributes: { type: 'route-line-outline' }
+            });
+              
+            const lineGraphic = new Graphic({
+              geometry: routePath,
+              symbol: lineSymbol,
+              attributes: { type: 'route-line' }
+            });
+              
+            // Add to the map
+            if (routeGraphicsLayer) {
+              routeGraphicsLayer.add(outlineGraphic);
+              routeGraphicsLayer.add(lineGraphic);
+            } else if (graphicsLayer) {
+              graphicsLayer.add(outlineGraphic);
+              graphicsLayer.add(lineGraphic);
             }
-          ];
-          
-          // Zoom to show the route
-          view.goTo(routeGeometry.extent.expand(1.2), {
-            duration: 1000,
-            easing: "ease-out"
-          });
-          
-          // Notify parent component
-          if (onRouteCalculated) {
-            onRouteCalculated(routeInfos);
+              
+            // Get route info - extract attributes from the JSON response
+            const routeAttributes = response.data.routes.features[0].attributes;
+            const drivingDistance = routeAttributes.Total_Kilometers || 0;
+            const drivingDuration = Math.round(routeAttributes.Total_Minutes) || 0;
+            const walkingDuration = Math.round(drivingDistance / 5 * 60);
+              
+            // Create route info
+            const routeInfos: RouteInfo[] = [
+              {
+                name: "Driving",
+                distance: Math.round(drivingDistance * 10) / 10,
+                duration: drivingDuration
+              },
+              {
+                name: "Walking",
+                distance: Math.round(drivingDistance * 10) / 10,
+                duration: walkingDuration
+              }
+            ];
+              
+            // Zoom to show the route
+            const routeExtent = response.data.routes.features[0].geometry.extent;
+            if (routeExtent) {
+              view.goTo(routeExtent, {
+                duration: 1000,
+                easing: "ease-out"
+              });
+            } else {
+              // Fallback extent
+              const extent = {
+                xmin: Math.min(startLng, endLng),
+                ymin: Math.min(startLat, endLat),
+                xmax: Math.max(startLng, endLng),
+                ymax: Math.max(startLat, endLat),
+                spatialReference: view.spatialReference
+              };
+              view.goTo(extent, {
+                duration: 1000,
+                easing: "ease-out"
+              });
+            }
+              
+            // Notify parent component
+            if (onRouteCalculated) {
+              onRouteCalculated(routeInfos);
+            }
+              
+            // Update state
+            setRouteResult(routeInfos);
+          } else {
+            throw new Error("No route data found in response");
           }
-          
-          // Update state
-          setRouteResult(routeInfos);
-        } else {
-          throw new Error("No route found");
+        } catch (requestError) {
+          console.error("Error making route request:", requestError);
+          drawFallbackRoute(destinationMarker);
         }
       } catch (error) {
-        console.error("Error with ArcGIS routing:", error);
+        console.error("Error loading modules:", error);
         // Fall back to direct line if routing service fails
         drawFallbackRoute(destinationMarker);
       }
