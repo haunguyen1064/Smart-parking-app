@@ -40,7 +40,7 @@ export default function ParkingDetail({
   const reservedCount = parkingSpaces.filter(space => space.status === "reserved").length;
   
   return (
-    <div className="border-t border-gray-200 h-full flex flex-col overflow-y-auto">
+    <div className="border-t border-gray-200 h-full flex flex-col overflow-auto">
       <div className="p-4 flex-shrink-0">
         <div className="flex items-center mb-4">
           <Button variant="ghost" size="sm" className="mr-2" onClick={onBack}>
