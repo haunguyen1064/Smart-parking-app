@@ -100,7 +100,7 @@ export default function BookingPanel({
       // Calculate total price for hours
       totalPrice = parkingLot.pricePerHour * bookingDuration;
     } 
-    else if (bookingMode === "day") {
+    else if (activeTab === "day") {
       // For day booking, use the first selected date as start
       // and the last selected date + 1 as end
       const firstDate = selectedDates[0];
@@ -161,7 +161,7 @@ export default function BookingPanel({
       <div className="mb-6">
         <h3 className="font-medium mb-3">Thời gian</h3>
         
-        <Tabs defaultValue="hour">
+        <Tabs defaultValue="hour" onValueChange={(value) => setActiveTab(value as "hour" | "day" | "month")}>
           <TabsList className="grid grid-cols-3 mb-4">
             <TabsTrigger value="hour">Giờ</TabsTrigger>
             <TabsTrigger value="day">Ngày</TabsTrigger>
