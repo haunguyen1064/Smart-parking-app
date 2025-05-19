@@ -2,9 +2,9 @@ import { useState, useRef } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { useMapSelect } from "@/hooks/map-select-context";
 import ParkingLayoutModal, { ParkingLayoutConfig } from "./parking-layout-modal";
 
 type RegisterParkingLotPanelProps = {
@@ -13,11 +13,13 @@ type RegisterParkingLotPanelProps = {
 
 export default function RegisterParkingLotPanel({ onBack }: RegisterParkingLotPanelProps) {
   const { toast } = useToast();
+  const { startSelecting } = useMapSelect();
   const [vehicleType, setVehicleType] = useState<string[]>([]);
   const [priceRange, setPriceRange] = useState<string>("");
-  const [mapSelection, setMapSelection] = useState(false);
   const [isLayoutModalOpen, setIsLayoutModalOpen] = useState(false);
   const [parkingLayout, setParkingLayout] = useState<ParkingLayoutConfig | null>(null);
+  const [isSelectingLocation, setIsSelectingLocation] = useState(false);
+  const [selectedLocation, setSelectedLocation] = useState<{ lat: number; lng: number } | null>(null);
   
   const schematicImageRef = useRef<HTMLInputElement>(null);
   const realImageRef = useRef<HTMLInputElement>(null);
@@ -52,6 +54,17 @@ export default function RegisterParkingLotPanel({ onBack }: RegisterParkingLotPa
       setVehicleType([...vehicleType, type]);
     }
   };
+
+  // Callback khi chọn vị trí trên bản đồ
+  const handleMapClick = (lat: number, lng: number) => {
+    setIsSelectingLocation(false);
+    setSelectedLocation({ lat, lng });
+  };
+
+  const handleSelectLocation = () => {
+    setIsSelectingLocation(true);
+    startSelecting(handleMapClick);
+  }
   
   return (
     <div className="w-full h-full flex flex-col bg-white overflow-hidden">
@@ -214,13 +227,20 @@ export default function RegisterParkingLotPanel({ onBack }: RegisterParkingLotPa
             
             <Input placeholder="Nhập số nhà, tên đường" required />
             
-            <div className="flex items-center mt-2">
-              <Checkbox 
-                id="mapSelect" 
-                checked={mapSelection}
-                onCheckedChange={(checked) => setMapSelection(!!checked)}
-              />
-              <Label htmlFor="mapSelect" className="ml-2 cursor-pointer">Chọn trên bản đồ</Label>
+            <div className="flex items-center mt-2 gap-2">
+                <Button
+                  type="button"
+                  variant={"outline"}
+                  onClick={handleSelectLocation}
+                  style={{ backgroundColor: isSelectingLocation ? "#e6f9ed" : "" }} // Light green background
+                >
+                  {isSelectingLocation ? 'Hãy click vào bản đồ' : 'Chọn vị trí bãi xe trên bản đồ'}
+                </Button>
+              {selectedLocation && (
+                <span className="ml-2 text-sm text-gray-600">
+                  Lat: {selectedLocation.lat.toFixed(6)}, Lng: {selectedLocation.lng.toFixed(6)}
+                </span>
+              )}
             </div>
           </div>
           

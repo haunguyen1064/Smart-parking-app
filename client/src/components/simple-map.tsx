@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Plus, Minus, Navigation } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { loadModules, loadCss } from "esri-loader";
+import { useMapSelect } from "@/hooks/map-select-context";
 
 export type ParkingLotMarker = {
   id: number;
@@ -25,6 +26,7 @@ type SimpleMapProps = {
   selectedMarkerId?: number;
   centerCoordinates?: [number, number];
   onRouteCalculated?: (routes: RouteInfo[]) => void;
+  onMapClick?: (lat: number, lng: number) => void; // Thêm prop này
 };
 
 export default function SimpleMap({ 
@@ -32,7 +34,8 @@ export default function SimpleMap({
   onMarkerClick, 
   selectedMarkerId, 
   centerCoordinates = [106.7, 10.77], // Default to Ho Chi Minh City
-  onRouteCalculated
+  onRouteCalculated,
+  onMapClick
 }: SimpleMapProps) {
   const mapDiv = useRef<HTMLDivElement>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -45,6 +48,7 @@ export default function SimpleMap({
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
   const [isCalculatingRoute, setIsCalculatingRoute] = useState(false);
   const [routeResult, setRouteResult] = useState<RouteInfo[] | null>(null);
+  const { isSelecting, onSelect, stopSelecting } = useMapSelect();
   
   // Initialize map
   useEffect(() => {
@@ -292,7 +296,24 @@ export default function SimpleMap({
           clickHandler.remove();
         }
         
-        const handler = view.on("click", (event: any) => {
+        const handler = view.on("click", async (event: any) => {
+          // Nếu đang chọn vị trí từ context thì lấy tọa độ và gọi callback
+          if (isSelecting && onSelect) {
+            const mapPoint = view.toMap({ x: event.x, y: event.y });
+            if (mapPoint) {
+              onSelect(mapPoint.latitude ?? mapPoint.lat ?? mapPoint.y, mapPoint.longitude ?? mapPoint.lng ?? mapPoint.x);
+              stopSelecting();
+              return;
+            }
+          }
+          // Nếu có onMapClick thì ưu tiên lấy tọa độ click và gọi callback
+          if (onMapClick) {
+            const mapPoint = view.toMap({ x: event.x, y: event.y });
+            if (mapPoint) {
+              onMapClick(mapPoint.latitude ?? mapPoint.lat ?? mapPoint.y, mapPoint.longitude ?? mapPoint.lng ?? mapPoint.x);
+              return;
+            }
+          }
           // Perform a hitTest to check if a marker was clicked
           view.hitTest(event).then((response: any) => {
             // Filter to only get graphics with the parking-marker type
@@ -336,7 +357,7 @@ export default function SimpleMap({
     };
     
     updateMarkers();
-  }, [markers, isLoading, graphicsLayer, view, selectedMarkerId, onMarkerClick]);
+  }, [markers, isLoading, graphicsLayer, view, selectedMarkerId, onMarkerClick, onMapClick, isSelecting, onSelect, stopSelecting]);
   
   // Handle zoom controls
   const handleZoomIn = () => {

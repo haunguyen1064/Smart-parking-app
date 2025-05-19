@@ -10,6 +10,7 @@ import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import RegisterParkingLot from "@/components/register-parking-lot";
+import { MapSelectProvider } from "@/hooks/map-select-context";
 
 export default function Home() {
   const { user } = useAuth();
@@ -168,59 +169,60 @@ export default function Home() {
   };
   
   return (
-    <div className="flex flex-col h-screen overflow-hidden">
-      <Navbar />      
-      <main className="flex-grow flex flex-col md:flex-row overflow-hidden relative">
-        <div
-          className={
-            activePanel === "home"
-              ? "w-full h-full"
-              : "flex-1"
-          }
-        >
-          <SimpleMap
-            markers={parkingLotMarkers}
-            onMarkerClick={handleMarkerClick}
-            selectedMarkerId={selectedParkingLot?.id}
-            onRouteCalculated={handleRouteCalculated}
-          />
-        </div>
-        <div
-          className={
-            activePanel === "home"
-              ? "fixed z-50 bg-white shadow-lg rounded-xl"
-              : "relative w-[30%]"
-          }
-          style={
-            activePanel === "home"
-              ? { top: 80, right: 200, height: "unset", width: "fit-content", minWidth: 320 }
-              : { height: "100%" }
-          }
-        >
-          <ContentPanel
-            parkingLots={parkingLots}
-            isLoading={isParkingLotsLoading}
-            selectedParkingLot={selectedParkingLot}
-            setSelectedParkingLot={setSelectedParkingLot}
-            parkingSpaces={parkingSpaces}
-            isSpacesLoading={isParkingSpacesLoading}
-            selectedParkingSpace={selectedParkingSpace}
-            setSelectedParkingSpace={setSelectedParkingSpace}
-            onCreateBooking={createBooking}
-            isBookingLoading={false}
-            routes={routes || undefined}
-            onNavigate={handleNavigate}
-            onRegisterParking={() => setShowRegisterForm(true)}
-            activePanel={activePanel}
-            onActivePanelChange={setActivePanel}
-          />
-        </div>
-      </main>
-      
-      {/* Register Parking Lot Form */}
-      {showRegisterForm && (
-        <RegisterParkingLot onClose={() => setShowRegisterForm(false)} />
-      )}
-    </div>
+    <MapSelectProvider>
+      <div className="flex flex-col h-screen overflow-hidden">
+        <Navbar />      
+        <main className="flex-grow flex flex-col md:flex-row overflow-hidden relative">
+          <div
+            className={
+              activePanel === "home"
+                ? "w-full h-full"
+                : "flex-1"
+            }
+          >
+            <SimpleMap
+              markers={parkingLotMarkers}
+              onMarkerClick={handleMarkerClick}
+              selectedMarkerId={selectedParkingLot?.id}
+              onRouteCalculated={handleRouteCalculated}
+            />
+          </div>
+          <div
+            className={
+              activePanel === "home"
+                ? "fixed z-50 bg-white shadow-lg rounded-xl"
+                : "relative w-[30%]"
+            }
+            style={
+              activePanel === "home"
+                ? { top: 80, right: 200, height: "unset", width: "fit-content", minWidth: 320 }
+                : { height: "100%" }
+            }
+          >
+            <ContentPanel
+              parkingLots={parkingLots}
+              isLoading={isParkingLotsLoading}
+              selectedParkingLot={selectedParkingLot}
+              setSelectedParkingLot={setSelectedParkingLot}
+              parkingSpaces={parkingSpaces}
+              isSpacesLoading={isParkingSpacesLoading}
+              selectedParkingSpace={selectedParkingSpace}
+              setSelectedParkingSpace={setSelectedParkingSpace}
+              onCreateBooking={createBooking}
+              isBookingLoading={false}
+              routes={routes || undefined}
+              onNavigate={handleNavigate}
+              onRegisterParking={() => setShowRegisterForm(true)}
+              activePanel={activePanel}
+              onActivePanelChange={setActivePanel}
+            />
+          </div>
+        </main>
+        {/* Register Parking Lot Form */}
+        {showRegisterForm && (
+          <RegisterParkingLot onClose={() => setShowRegisterForm(false)} />
+        )}
+      </div>
+    </MapSelectProvider>
   );
 }
