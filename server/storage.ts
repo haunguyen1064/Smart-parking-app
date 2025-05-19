@@ -107,7 +107,8 @@ export class MemStorage implements IStorage {
       closingHour: "22:00",
       ownerId: owner.id,
       images: [
-        "https://images.unsplash.com/photo-1590674899484-13e8f7733e3d?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=400"
+        "https://plus.unsplash.com/premium_photo-1661962915138-c10a03d4ae28?q=80&w=2071&auto=format&fit=crop&w=800&h=400",
+        "https://images.unsplash.com/photo-1593280405106-e438ebe93f5b?q=80&w=2080&auto=format&fit=crop&w=800&h=400"
       ],
       createdAt: new Date()
     };

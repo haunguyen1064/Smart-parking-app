@@ -37,12 +37,12 @@ export default function SearchPanel({
     <div className="h-full flex flex-col overflow-hidden">
       <div className="p-4 flex-shrink-0">
         {onBack && (
-          <div className="mb-4">
+          <div className="mb-4 flex items-center">
             <Button
               variant="ghost"
               size="sm"
               onClick={onBack}
-              className="flex items-center justify-center text-gray-600 w-8 h-8 p-0"
+              className="flex items-center justify-center text-gray-600 w-8 h-8 p-0 mr-2"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -59,6 +59,7 @@ export default function SearchPanel({
                 <path d="m15 18-6-6 6-6" />
               </svg>
             </Button>
+            <h2 className="text-lg font-semibold">Tìm kiếm bãi đỗ xe</h2>
           </div>
         )}
 

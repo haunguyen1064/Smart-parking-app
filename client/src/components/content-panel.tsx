@@ -78,6 +78,10 @@ export default function ContentPanel({
       );
       setMatchingLots(matchingLots);
     }
+
+    if (!query) {
+      setMatchingLots(parkingLots ?? [])
+    }
   };
 
   // Navigation handlers
@@ -132,10 +136,7 @@ export default function ContentPanel({
             onBookNow={handleBookNow}
             onBack={() => {
               setSelectedParkingLot(null);
-              // If user is logged in, go back to home panel
-              if (user) {
-                setActivePanel("home");
-              }
+              handleSearchParking()
             }}
             onNavigate={onNavigate}
             routes={routes}
