@@ -5,6 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useMapSelect } from "@/hooks/map-select-context";
+import { useCreateParkingLot } from "@/hooks/use-parking";
 import ParkingLayoutModal, { ParkingLayoutConfig } from "./parking-layout-modal";
 
 type RegisterParkingLotPanelProps = {
@@ -24,6 +25,42 @@ export default function RegisterParkingLotPanel({ onBack }: RegisterParkingLotPa
   const schematicImageRef = useRef<HTMLInputElement>(null);
   const realImageRef = useRef<HTMLInputElement>(null);
   
+  // Hàm reset toàn bộ form
+  const resetForm = () => {
+    setVehicleType([]);
+    setPriceRange("");
+    setIsLayoutModalOpen(false);
+    setParkingLayout(null);
+    setIsSelectingLocation(false);
+    setSelectedLocation(null);
+    if (schematicImageRef.current) schematicImageRef.current.value = "";
+    if (realImageRef.current) realImageRef.current.value = "";
+    // Reset các input text
+    const form = document.getElementById("register-parking-lot-form") as HTMLFormElement | null;
+    if (form) {
+      form.reset();
+    }
+  };
+  
+  // Mutation để tạo bãi đỗ xe mới
+  const createParkingLot = useCreateParkingLot({
+    onSuccess: () => {
+      resetForm();
+      toast({
+        title: "Đăng ký thành công",
+        description: "Bãi đỗ xe của bạn đã được đăng ký.",
+      });
+      onBack();
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Đăng ký thất bại",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   // Handle the layout configuration from the modal
   const handleLayoutConfirm = (layoutConfig: ParkingLayoutConfig) => {
     setParkingLayout(layoutConfig);
@@ -36,15 +73,35 @@ export default function RegisterParkingLotPanel({ onBack }: RegisterParkingLotPa
   
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Show success message
-    toast({
-      title: "Đăng ký thành công",
-      description: "Bãi đỗ xe của bạn đã được đăng ký và đang chờ xét duyệt.",
-    });
-    
-    // Go back to home panel
-    onBack();
+    // Lấy dữ liệu từ form
+    const form = e.target as HTMLFormElement;
+    const name = (form.elements.namedItem("name") as HTMLInputElement)?.value;
+    const address = (form.elements.namedItem("address") as HTMLInputElement)?.value;
+    const totalSpots = Number((form.elements.namedItem("capacity") as HTMLInputElement)?.value);
+    // Lấy giá trị price
+    let pricePerHour = 0;
+    if (priceRange === "0-20k") pricePerHour = 20000;
+    else if (priceRange === "21-50k") pricePerHour = 50000;
+    else if (priceRange === "51-100k") pricePerHour = 100000;
+    else if (priceRange === ">100k") pricePerHour = 150000;
+    // Lấy lat/lng
+    const latitude = selectedLocation?.lat?.toString() || "";
+    const longitude = selectedLocation?.lng?.toString() || "";
+    // Tạo dữ liệu gửi đi
+    const data = {
+      name,
+      address: address || "",
+      latitude,
+      longitude,
+      totalSpots,
+      availableSpots: totalSpots,
+      pricePerHour,
+      description: "",
+      openingHour: "06:00",
+      closingHour: "22:00",
+      images: [],
+    };
+    createParkingLot.mutate(data);
   };
   
   const toggleVehicleType = (type: string) => {
@@ -85,11 +142,11 @@ export default function RegisterParkingLotPanel({ onBack }: RegisterParkingLotPa
       </div>
       
       <div className="p-4 overflow-y-auto flex-grow" style={{ overflowY: 'auto', maxHeight: 'calc(100vh - 150px)' }}>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form id="register-parking-lot-form" onSubmit={handleSubmit} className="space-y-4">
           {/* Parking Lot Name */}
           <div>
             <Label htmlFor="name">Tên bãi đỗ xe</Label>
-            <Input id="name" placeholder="Nhập tên bãi đỗ xe" required />
+            <Input id="name" name="name" placeholder="Nhập tên bãi đỗ xe" required />
           </div>
           
           {/* Vehicle Type */}
@@ -157,7 +214,7 @@ export default function RegisterParkingLotPanel({ onBack }: RegisterParkingLotPa
           {/* Capacity */}
           <div>
             <Label htmlFor="capacity">Sức chứa</Label>
-            <Input id="capacity" type="number" placeholder="Nhập số lượng chỗ đỗ xe" required />
+            <Input id="capacity" name="capacity" type="number" placeholder="Nhập số lượng chỗ đỗ xe" required />
           </div>
           
           {/* Location */}
@@ -225,7 +282,7 @@ export default function RegisterParkingLotPanel({ onBack }: RegisterParkingLotPa
               </Select>
             </div>
             
-            <Input placeholder="Nhập số nhà, tên đường" required />
+            <Input name="address" placeholder="Nhập số nhà, tên đường" required />
             
             <div className="flex items-center mt-2 gap-2">
                 <Button

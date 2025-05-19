@@ -168,5 +168,28 @@ export function useParking() {
   return context;
 }
 
+export function useCreateParkingLot(options?: {
+  onSuccess?: () => void;
+  onError?: (error: any) => void;
+}) {
+  return useMutation({
+    mutationFn: async (data: any) => {
+      const res = await apiRequest("POST", "/api/parking-lots", data);
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || "Tạo bãi đỗ xe thất bại");
+      }
+      return await res.json();
+    },
+    onSuccess: (data, variables, context) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/parking-lots"] });
+      options?.onSuccess?.();
+    },
+    onError: (error: any) => {
+      options?.onError?.(error);
+    },
+  });
+}
+
 // Don't forget to import useState
 import { useState } from "react";
