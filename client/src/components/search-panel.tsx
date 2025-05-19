@@ -13,57 +13,73 @@ type SearchPanelProps = {
   onBack?: () => void;
 };
 
-export default function SearchPanel({ 
-  isLoading, 
-  parkingLots, 
+export default function SearchPanel({
+  isLoading,
+  parkingLots,
   onSelectParkingLot,
   onSearch,
-  onBack
+  onBack,
 }: SearchPanelProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [showFilters, setShowFilters] = useState(false);
-  
-  const handleSearch = (e: React.FormEvent) => {
+
+  const handleSearch = (e: string) => {
+    setSearchQuery(e);
+    onSearch(e);
+  };
+
+  const preventDefault = (e: React.FormEvent) => {
     e.preventDefault();
     onSearch(searchQuery);
   };
-  
+
   return (
     <div className="h-full flex flex-col overflow-hidden">
       <div className="p-4 flex-shrink-0">
         {onBack && (
           <div className="mb-4">
-            <Button 
-              variant="ghost" 
-              size="sm" 
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={onBack}
               className="flex items-center justify-center text-gray-600 w-8 h-8 p-0"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
-                <path d="m15 18-6-6 6-6"/>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="h-5 w-5"
+              >
+                <path d="m15 18-6-6 6-6" />
               </svg>
             </Button>
           </div>
         )}
-        
-        <form onSubmit={handleSearch} className="mb-4">
+
+        <form onSubmit={preventDefault} className="mb-4">
           <div className="relative">
             <Input
               type="text"
               placeholder="Nhập vị trí của bạn để tìm bãi đỗ xe..."
               className="w-full pl-10"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => handleSearch(e.target.value)}
             />
             <div className="absolute left-3 top-2.5 text-gray-400">
               <Search className="h-4 w-4" />
             </div>
           </div>
         </form>
-        
+
         <div className="mb-4">
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             className="flex items-center space-x-2"
             onClick={() => setShowFilters(!showFilters)}
           >
@@ -86,7 +102,7 @@ export default function SearchPanel({
             <span>Bộ lọc</span>
           </Button>
         </div>
-        
+
         {showFilters && (
           <div className="mb-6 bg-gray-50 p-3 rounded-md">
             <h3 className="font-medium mb-2">Lọc theo:</h3>
@@ -126,11 +142,11 @@ export default function SearchPanel({
           </div>
         )}
       </div>
-      
+
       <div className="px-4 pb-4 overflow-y-auto flex-grow">
         <div className="space-y-3">
           <h3 className="font-medium">Bãi đỗ xe gần đây</h3>
-          
+
           {isLoading ? (
             // Skeleton loading state
             Array.from({ length: 3 }).map((_, index) => (
@@ -152,7 +168,11 @@ export default function SearchPanel({
             </div>
           ) : (
             parkingLots.map((lot) => (
-              <Card key={lot.id} className="cursor-pointer hover:bg-gray-50 transition-colors" onClick={() => onSelectParkingLot(lot)}>
+              <Card
+                key={lot.id}
+                className="cursor-pointer hover:bg-gray-50 transition-colors"
+                onClick={() => onSelectParkingLot(lot)}
+              >
                 <CardContent className="p-3">
                   <div className="flex justify-between items-start">
                     <div>
@@ -168,7 +188,7 @@ export default function SearchPanel({
                       </div>
                     </div>
                     <div className="bg-primary text-white text-xs px-2 py-1 rounded-full">
-                      {lot.pricePerHour.toLocaleString('vi-VN')}đ/h
+                      {lot.pricePerHour.toLocaleString("vi-VN")}đ/h
                     </div>
                   </div>
                 </CardContent>

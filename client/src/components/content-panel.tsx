@@ -39,84 +39,93 @@ export default function ContentPanel({
   isBookingLoading,
   routes,
   onNavigate,
-  onRegisterParking
+  onRegisterParking,
 }: ContentPanelProps) {
   const { user } = useAuth();
   const [activePanel, setActivePanel] = useState<PanelType>("home");
-  
+  const [matchingParkingLots, setMatchingLots] = useState<ParkingLot[]>(
+    parkingLots ?? [],
+  );
+
   // Update active panel only when a parking lot is selected
   useEffect(() => {
     if (selectedParkingLot) {
       setActivePanel("detail");
     }
   }, [selectedParkingLot]);
-  
+
+  useEffect(() => {
+    if (parkingLots?.length) {
+      setMatchingLots(parkingLots);
+    }
+  }, [parkingLots]);
+
   const handleBookNow = () => {
     setActivePanel("booking");
   };
-  
+
   const handleBackToDetail = () => {
     setActivePanel("detail");
   };
-  
+
   const handleSearch = (query: string) => {
     // If there's a query, search for matching parking lots
     if (query && parkingLots) {
-      const matchingLots = parkingLots.filter(lot => 
-        lot.name.toLowerCase().includes(query.toLowerCase()) ||
-        lot.address.toLowerCase().includes(query.toLowerCase())
+      const matchingLots = parkingLots.filter(
+        (lot) =>
+          lot.name.toLowerCase().includes(query.toLowerCase()) ||
+          lot.address.toLowerCase().includes(query.toLowerCase()),
       );
-      
-      // If there's only one match, select it
-      if (matchingLots.length === 1) {
-        setSelectedParkingLot(matchingLots[0]);
-      }
+      setMatchingLots(matchingLots);
     }
   };
-  
+
   // Navigation handlers
   const handleSearchParking = () => {
     setActivePanel("search");
   };
-  
+
   const handleRegisterParking = () => {
     setActivePanel("register");
   };
-  
+
   const handleBackToHome = () => {
     setActivePanel("home");
   };
 
   return (
-    <div className="w-full md:w-2/5 bg-white h-full overflow-auto" id="content-panel">
+    <div
+      className="w-full md:w-2/5 bg-white h-full overflow-auto"
+      id="content-panel"
+    >
       {/* Home Panel */}
       <div className={activePanel !== "home" ? "hidden" : ""}>
-        <HomePanel 
+        <HomePanel
           onSearchParking={handleSearchParking}
           onRegisterParking={handleRegisterParking}
         />
       </div>
-      
+
       {/* Search Panel */}
       <div className={activePanel !== "search" ? "hidden" : ""}>
-        <SearchPanel 
-          isLoading={isLoading} 
-          parkingLots={parkingLots || []} 
+        <SearchPanel
+          isLoading={isLoading}
+          parkingLots={matchingParkingLots || []}
           onSelectParkingLot={setSelectedParkingLot}
           onSearch={handleSearch}
           onBack={handleBackToHome}
         />
       </div>
-      
+
       {/* Register Parking Lot Panel */}
       <div className={activePanel !== "register" ? "hidden" : ""}>
         <RegisterParkingLotPanel onBack={handleBackToHome} />
       </div>
-      
+
       {/* Detail Panel */}
       <div className={activePanel !== "detail" ? "hidden" : ""}>
         {selectedParkingLot && (
-          <ParkingDetail 
+          <ParkingDetail
             parkingLot={selectedParkingLot}
             parkingSpaces={parkingSpaces || []}
             isSpacesLoading={isSpacesLoading}
@@ -133,11 +142,11 @@ export default function ContentPanel({
           />
         )}
       </div>
-      
+
       {/* Booking Panel */}
       <div className={activePanel !== "booking" ? "hidden" : "h-full"}>
         {selectedParkingLot && (
-          <BookingPanel 
+          <BookingPanel
             parkingLot={selectedParkingLot}
             parkingSpaces={parkingSpaces || []}
             isSpacesLoading={isSpacesLoading}
