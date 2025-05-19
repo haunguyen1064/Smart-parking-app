@@ -70,26 +70,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   
   const loginMutation = useMutation({
     mutationFn: async (credentials: LoginCredentials) => {
-      // For demo purposes - hardcoded successful login when username is "hau" and password is "123"
-      if (credentials.username === "hau" && credentials.password === "123") {
-        // Successful login response
-        const userData = {
-          id: 1,
-          username: "hau",
-          email: "hau@example.com",
-          fullName: "Hau Nguyen",
-          role: "user",
-          phoneNumber: "123456789"
-        };
-        
-        // Store user data in localStorage for our demo persistence
-        localStorage.setItem('demoUser', JSON.stringify(userData));
-        
-        return userData;
-      } else {
-        // Failed login
-        throw new Error("Email hoặc mật khẩu không đúng");
+      // Call API
+      const res = await apiRequest("POST", "/api/auth/login", credentials);
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.message || "Email hoặc mật khẩu không đúng");
       }
+      return await res.json();
     },
     onSuccess: (data) => {
       queryClient.setQueryData(["/api/auth/me"], data);

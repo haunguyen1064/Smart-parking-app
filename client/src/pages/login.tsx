@@ -46,19 +46,12 @@ export default function Login() {
   const onSubmit = async (data: FormData) => {
     setIsSubmitting(true);
     setError("");
-    
     try {
-      // Hardcoded validation for demo
-      if (data.email === "hau" && data.password === "123") {
-        await login({
-          username: data.email, // Using email field as username
-          password: data.password,
-        });
-        // Navigation is handled in the auth hook
-      } else {
-        // Simulate error for invalid credentials
-        throw new Error("Email hoặc mật khẩu không đúng");
-      }
+      await login({
+        username: data.email, // Using email field as username
+        password: data.password,
+      });
+      // Navigation is handled in the auth hook
     } catch (error) {
       setError(error instanceof Error ? error.message : "Đăng nhập thất bại");
     } finally {

@@ -164,7 +164,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/owner/parking-lots", requireOwner, async (req, res) => {
     try {
-      const parkingLots = await storage.getParkingLotsByOwner(req.session.userId!);
+      const parkingLots = await storage.getParkingLotsByOwner((req.session as any).userId!);
       res.status(200).json(parkingLots);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch owner's parking lots" });
@@ -175,7 +175,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const parkingLotData = insertParkingLotSchema.parse({
         ...req.body,
-        ownerId: req.session.userId
+        ownerId: (req.session as any).userId
       });
       
       const parkingLot = await storage.createParkingLot(parkingLotData);
@@ -192,15 +192,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const id = parseInt(req.params.id);
       const parkingLot = await storage.getParkingLot(id);
-      
       if (!parkingLot) {
         return res.status(404).json({ message: "Parking lot not found" });
       }
-      
-      if (parkingLot.ownerId !== req.session.userId) {
+      if (parkingLot.ownerId !== (req.session as any).userId) {
         return res.status(403).json({ message: "Not authorized to update this parking lot" });
       }
-      
       const updatedParkingLot = await storage.updateParkingLot(id, req.body);
       res.status(200).json(updatedParkingLot);
     } catch (error) {
@@ -252,21 +249,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const id = parseInt(req.params.id);
       const { status } = req.body;
-      
       if (!["available", "occupied", "reserved"].includes(status)) {
         return res.status(400).json({ message: "Invalid status" });
       }
-      
       const space = await storage.getParkingSpace(id);
       if (!space) {
         return res.status(404).json({ message: "Parking space not found" });
       }
-      
       const parkingLot = await storage.getParkingLot(space.parkingLotId);
-      if (!parkingLot || parkingLot.ownerId !== req.session.userId) {
+      if (!parkingLot || parkingLot.ownerId !== (req.session as any).userId) {
         return res.status(403).json({ message: "Not authorized to update this parking space" });
       }
-      
       const updatedSpace = await storage.updateParkingSpaceStatus(id, status);
       res.status(200).json(updatedSpace);
     } catch (error) {
@@ -277,7 +270,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Booking routes
   app.get("/api/bookings", requireAuth, async (req, res) => {
     try {
-      const userId = req.session.userId!;
+      const userId = (req.session as any).userId!;
       const bookings = await storage.getBookings(userId);
       res.status(200).json(bookings);
     } catch (error) {
@@ -294,7 +287,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Parking lot not found" });
       }
       
-      if (parkingLot.ownerId !== req.session.userId) {
+      if (parkingLot.ownerId !== (req.session as any).userId) {
         return res.status(403).json({ message: "Not authorized to view bookings for this parking lot" });
       }
       
@@ -307,21 +300,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/bookings", requireAuth, async (req, res) => {
     try {
-      const bookingData = insertBookingSchema.parse({
+      // Convert date strings to Date objects if needed
+      const sessionUserId = (req.session as any).userId;
+      const bookingInput = {
         ...req.body,
-        userId: req.session.userId
-      });
-      
+        userId: sessionUserId,
+      };
+      if (typeof bookingInput.startTime === "string") {
+        bookingInput.startTime = new Date(bookingInput.startTime);
+      }
+      if (typeof bookingInput.endTime === "string") {
+        bookingInput.endTime = new Date(bookingInput.endTime);
+      }
+      const bookingData = insertBookingSchema.parse(bookingInput);
       // Check if space is available
       const space = await storage.getParkingSpace(bookingData.parkingSpaceId);
       if (!space) {
         return res.status(404).json({ message: "Parking space not found" });
       }
-      
       if (space.status !== "available") {
         return res.status(400).json({ message: "Parking space is not available" });
       }
-      
       // Create booking
       const booking = await storage.createBooking(bookingData);
       res.status(201).json(booking);
@@ -337,18 +336,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const id = parseInt(req.params.id);
       const { status } = req.body;
-      
       if (!["pending", "confirmed", "completed", "cancelled"].includes(status)) {
         return res.status(400).json({ message: "Invalid status" });
       }
-      
       const booking = await storage.getBooking(id);
       if (!booking) {
         return res.status(404).json({ message: "Booking not found" });
       }
-      
       // Check authorization - user can cancel their own booking, owner can confirm/complete
-      if (req.session.userId === booking.userId) {
+      if ((req.session as any).userId === booking.userId) {
         // User can only cancel their own booking
         if (status !== "cancelled") {
           return res.status(403).json({ message: "Users can only cancel bookings" });
@@ -356,11 +352,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else {
         // Owner validation
         const parkingLot = await storage.getParkingLot(booking.parkingLotId);
-        if (!parkingLot || parkingLot.ownerId !== req.session.userId) {
+        if (!parkingLot || parkingLot.ownerId !== (req.session as any).userId) {
           return res.status(403).json({ message: "Not authorized to update this booking" });
         }
       }
-      
       const updatedBooking = await storage.updateBookingStatus(id, status);
       res.status(200).json(updatedBooking);
     } catch (error) {
@@ -389,7 +384,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const reviewData = insertReviewSchema.parse({
         ...req.body,
-        userId: req.session.userId
+        userId: (req.session as any).userId
       });
       
       // Check if parking lot exists
