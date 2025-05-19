@@ -165,12 +165,32 @@ export default function RegisterParkingLot({ onClose }: RegisterParkingLotProps)
                   
                   <Select>
                     <SelectTrigger>
-                      <SelectValue placeholder="Gò Vấp" />
+                      <SelectValue placeholder="Chọn Quận" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="govap">Gò Vấp</SelectItem>
+                      <SelectItem value="binhChanh">Bình Chánh</SelectItem>
+                      <SelectItem value="binhTan">Bình Tân</SelectItem>
+                      <SelectItem value="binhThanh">Bình Thạnh</SelectItem>
+                      <SelectItem value="canGio">Cần Giờ</SelectItem>
+                      <SelectItem value="cuChi">Củ Chi</SelectItem>
+                      <SelectItem value="goVap">Gò Vấp</SelectItem>
+                      <SelectItem value="hocMon">Hóc Môn</SelectItem>
+                      <SelectItem value="nhaBe">Nhà Bè</SelectItem>
+                      <SelectItem value="phuNhuan">Phú Nhuận</SelectItem>
+                      <SelectItem value="tanBinh">Tân Bình</SelectItem>
+                      <SelectItem value="tanPhu">Tân Phú</SelectItem>
+                      <SelectItem value="thuDuc">TP Thủ Đức</SelectItem>
                       <SelectItem value="q1">Quận 1</SelectItem>
                       <SelectItem value="q2">Quận 2</SelectItem>
+                      <SelectItem value="q3">Quận 3</SelectItem>
+                      <SelectItem value="q4">Quận 4</SelectItem>
+                      <SelectItem value="q5">Quận 5</SelectItem>
+                      <SelectItem value="q6">Quận 6</SelectItem>
+                      <SelectItem value="q7">Quận 7</SelectItem>
+                      <SelectItem value="q8">Quận 8</SelectItem>
+                      <SelectItem value="q10">Quận 10</SelectItem>
+                      <SelectItem value="q11">Quận 11</SelectItem>
+                      <SelectItem value="q12">Quận 12</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -178,12 +198,17 @@ export default function RegisterParkingLot({ onClose }: RegisterParkingLotProps)
                 <div className="mb-2">
                   <Select>
                     <SelectTrigger>
-                      <SelectValue placeholder="Phường 8" />
+                      <SelectValue placeholder="Chọn Phường" />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="p1">Phường 1</SelectItem>
+                      <SelectItem value="p2">Phường 2</SelectItem>
+                      <SelectItem value="p3">Phường 3</SelectItem>
+                      <SelectItem value="p4">Phường 4</SelectItem>
+                      <SelectItem value="p5">Phường 5</SelectItem>
+                      <SelectItem value="p6">Phường 6</SelectItem>
+                      <SelectItem value="p7">Phường 7</SelectItem>
                       <SelectItem value="p8">Phường 8</SelectItem>
-                      <SelectItem value="p9">Phường 9</SelectItem>
-                      <SelectItem value="p10">Phường 10</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
