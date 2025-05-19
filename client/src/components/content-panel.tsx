@@ -8,6 +8,8 @@ import { ParkingLot, ParkingSpace } from "@/hooks/use-parking";
 import { RouteInfo } from "./simple-map";
 import { useAuth } from "@/hooks/use-auth";
 
+export type PanelType = "home" | "search" | "detail" | "booking" | "register";
+
 type ContentPanelProps = {
   parkingLots: ParkingLot[] | undefined;
   isLoading: boolean;
@@ -22,9 +24,9 @@ type ContentPanelProps = {
   routes?: RouteInfo[];
   onNavigate?: () => void;
   onRegisterParking?: () => void;
+  activePanel?: PanelType;
+  onActivePanelChange?: (panel: PanelType) => void;
 };
-
-type PanelType = "home" | "search" | "detail" | "booking" | "register";
 
 export default function ContentPanel({
   parkingLots,
@@ -40,9 +42,12 @@ export default function ContentPanel({
   routes,
   onNavigate,
   onRegisterParking,
+  activePanel: controlledActivePanel,
+  onActivePanelChange,
 }: ContentPanelProps) {
   const { user } = useAuth();
-  const [activePanel, setActivePanel] = useState<PanelType>("home");
+  const [uncontrolledActivePanel, setUncontrolledActivePanel] = useState<PanelType>("home");
+  const activePanel = controlledActivePanel !== undefined ? controlledActivePanel : uncontrolledActivePanel;
   const [matchingParkingLots, setMatchingLots] = useState<ParkingLot[]>(
     parkingLots ?? [],
   );
@@ -97,9 +102,17 @@ export default function ContentPanel({
     setActivePanel("home");
   };
 
+  // Helper to set active panel and notify parent
+  const setActivePanel = (panel: PanelType) => {
+    if (!controlledActivePanel) setUncontrolledActivePanel(panel);
+    if (onActivePanelChange) onActivePanelChange(panel);
+  };
+
+  const containerClasses = "w-full bg-white h-full overflow-auto"
+
   return (
     <div
-      className="w-full md:w-2/5 bg-white h-full overflow-auto"
+      className={containerClasses + activePanel === "home" ?  "rounded-xl" : ""}
       id="content-panel"
     >
       {/* Home Panel */}

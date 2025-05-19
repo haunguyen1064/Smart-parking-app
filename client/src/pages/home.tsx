@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Navbar } from "@/components/navbar";
 import SimpleMap, { ParkingLotMarker, RouteInfo } from "@/components/simple-map";
-import ContentPanel from "@/components/content-panel";
+import ContentPanel, { type PanelType } from "@/components/content-panel";
 import { ParkingLot, ParkingSpace } from "@/hooks/use-parking";
 import { useAuth } from "@/hooks/use-auth";
 import { apiRequest } from "@/lib/queryClient";
@@ -20,6 +20,7 @@ export default function Home() {
   const [selectedParkingSpace, setSelectedParkingSpace] = useState<ParkingSpace | null>(null);
   const [routes, setRoutes] = useState<RouteInfo[] | null>(null);
   const [showRegisterForm, setShowRegisterForm] = useState(false);
+  const [activePanel, setActivePanel] = useState<PanelType>("home");
   
   // Get all parking lots
   const {
@@ -168,33 +169,52 @@ export default function Home() {
   
   return (
     <div className="flex flex-col h-screen overflow-hidden">
-      <Navbar />
-      
-      {/* We don't need the buttons overlay anymore as they are now in the HomePanel */}
-      
-      <main className="flex-grow flex flex-col md:flex-row overflow-hidden">
-        <SimpleMap
-          markers={parkingLotMarkers}
-          onMarkerClick={handleMarkerClick}
-          selectedMarkerId={selectedParkingLot?.id}
-          onRouteCalculated={handleRouteCalculated}
-        />
-        
-        <ContentPanel
-          parkingLots={parkingLots}
-          isLoading={isParkingLotsLoading}
-          selectedParkingLot={selectedParkingLot}
-          setSelectedParkingLot={setSelectedParkingLot}
-          parkingSpaces={parkingSpaces}
-          isSpacesLoading={isParkingSpacesLoading}
-          selectedParkingSpace={selectedParkingSpace}
-          setSelectedParkingSpace={setSelectedParkingSpace}
-          onCreateBooking={createBooking}
-          isBookingLoading={false}
-          routes={routes || undefined}
-          onNavigate={handleNavigate}
-          onRegisterParking={() => setShowRegisterForm(true)}
-        />
+      <Navbar />      
+      <main className="flex-grow flex flex-col md:flex-row overflow-hidden relative">
+        <div
+          className={
+            activePanel === "home"
+              ? "w-full h-full"
+              : "flex-1"
+          }
+        >
+          <SimpleMap
+            markers={parkingLotMarkers}
+            onMarkerClick={handleMarkerClick}
+            selectedMarkerId={selectedParkingLot?.id}
+            onRouteCalculated={handleRouteCalculated}
+          />
+        </div>
+        <div
+          className={
+            activePanel === "home"
+              ? "fixed z-50 bg-white shadow-lg rounded-xl"
+              : "relative w-[30%]"
+          }
+          style={
+            activePanel === "home"
+              ? { top: 80, right: 20, height: "unset", width: 450, minWidth: 320 }
+              : { height: "100%" }
+          }
+        >
+          <ContentPanel
+            parkingLots={parkingLots}
+            isLoading={isParkingLotsLoading}
+            selectedParkingLot={selectedParkingLot}
+            setSelectedParkingLot={setSelectedParkingLot}
+            parkingSpaces={parkingSpaces}
+            isSpacesLoading={isParkingSpacesLoading}
+            selectedParkingSpace={selectedParkingSpace}
+            setSelectedParkingSpace={setSelectedParkingSpace}
+            onCreateBooking={createBooking}
+            isBookingLoading={false}
+            routes={routes || undefined}
+            onNavigate={handleNavigate}
+            onRegisterParking={() => setShowRegisterForm(true)}
+            activePanel={activePanel}
+            onActivePanelChange={setActivePanel}
+          />
+        </div>
       </main>
       
       {/* Register Parking Lot Form */}

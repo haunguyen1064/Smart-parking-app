@@ -8,17 +8,17 @@ type HomePanelProps = {
 
 export default function HomePanel({ onSearchParking, onRegisterParking }: HomePanelProps) {
   return (
-    <div className="w-full h-full flex flex-col items-center justify-center bg-white shadow-lg p-8">
-      <div className="flex flex-col space-y-4 w-full max-w-md">
+    <div className="w-full h-full flex flex-row items-center justify-center bg-white shadow-lg p-4 rounded-xl">
+      <div className="flex flex-row space-y-4 w-fit gap-4">
         <Button 
-          className="rounded-full px-6 py-6 bg-indigo-400 text-white hover:bg-indigo-500 w-full"
+          className="rounded-full px-4 py-4 bg-indigo-400 text-white hover:bg-indigo-500 w-fit"
           onClick={onSearchParking}
         >
           Tìm bãi đỗ xe gần bạn
         </Button>
         
         <Button 
-          className="rounded-full px-6 py-6 bg-indigo-400 text-white hover:bg-indigo-500 w-full"
+          className="rounded-full py-4 bg-indigo-400 text-white hover:bg-indigo-500 w-fit !mt-0"
           onClick={onRegisterParking}
         >
           Đăng ký bãi đỗ xe của bạn
