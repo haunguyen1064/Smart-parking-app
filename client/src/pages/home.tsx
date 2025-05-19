@@ -193,7 +193,7 @@ export default function Home() {
           }
           style={
             activePanel === "home"
-              ? { top: 80, right: 20, height: "unset", width: 450, minWidth: 320 }
+              ? { top: 80, right: 200, height: "unset", width: "fit-content", minWidth: 320 }
               : { height: "100%" }
           }
         >

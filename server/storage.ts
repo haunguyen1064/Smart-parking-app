@@ -71,9 +71,9 @@ export class MemStorage implements IStorage {
     // Create a sample owner
     const owner: User = {
       id: this.userId++,
-      username: "owner",
+      username: "owner@uit.edu.vn",
       password: "password",
-      fullName: "Thanh Hậu",
+      fullName: "Phi Yến",
       email: "owner@example.com",
       phoneNumber: "0123456789",
       role: "owner"
@@ -83,9 +83,9 @@ export class MemStorage implements IStorage {
     // Create a sample user
     const user: User = {
       id: this.userId++,
-      username: "user",
+      username: "user@uit.edu.vn",
       password: "password",
-      fullName: "Minh Tuấn",
+      fullName: "Thanh Hậu",
       email: "user@example.com",
       phoneNumber: "0987654321",
       role: "user"

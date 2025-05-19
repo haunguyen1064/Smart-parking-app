@@ -85,12 +85,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         description: `Chào mừng quay trở lại, ${data.fullName}!`,
       });
       
-      // Redirect to appropriate page based on role
-      if (data.role === "owner") {
-        navigate("/owner/dashboard");
-      } else {
-        navigate("/");
-      }
+      navigate("/");
     },
     onError: (error: Error) => {
       toast({

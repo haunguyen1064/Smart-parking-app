@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
-import { Car, FileText, User } from "lucide-react";
+import { Car, FileText, LogOut, User } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 export function Navbar() {
@@ -24,12 +24,14 @@ export function Navbar() {
             <div className="h-9 w-24 animate-pulse rounded-md bg-gray-200"></div>
           ) : user ? (
             <div className="flex items-center gap-4">
-              <Link href="/owner/dashboard">
-                <Button variant="outline" size="sm" className="flex items-center gap-2">
-                  <FileText className="h-4 w-4" />
-                  <span className="hidden md:inline">Quản lý bãi đỗ xe</span>
-                </Button>
-              </Link>
+              {user.role === 'owner' && (
+                <Link href="/owner/dashboard">
+                  <Button variant="outline" size="sm" className="flex items-center gap-2">
+                    <FileText className="h-4 w-4" />
+                    <span className="hidden md:inline">Quản lý bãi đỗ xe</span>
+                  </Button>
+                </Link>
+              )}
               
               <div className="flex items-center gap-2">
                 <Avatar className="h-8 w-8 bg-gray-200">
@@ -40,7 +42,7 @@ export function Navbar() {
                 </Avatar>
                 <span className="text-sm font-medium text-gray-700">{user.fullName}</span>
                 <Button onClick={() => logout()} variant="ghost" size="sm" className="text-gray-500">
-                  <User className="h-4 w-4 mr-1" />
+                  <LogOut className="h-4 w-4 mr-1" />
                   <span className="hidden md:inline">Đăng xuất</span>
                 </Button>
               </div>
