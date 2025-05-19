@@ -39,7 +39,7 @@ export default function ParkingSpotsLayout({
       case "occupied":
         return "bg-orange-500";
       case "reserved":
-        return "bg-green-500";
+        return "bg-orange-500";
       default:
         return "bg-gray-500";
     }
@@ -53,7 +53,7 @@ export default function ParkingSpotsLayout({
       return "cursor-pointer hover:opacity-90";
     }
     
-    return "cursor-not-allowed opacity-80";
+    return "cursor-not-allowed";
   };
   
   return (

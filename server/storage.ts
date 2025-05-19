@@ -207,17 +207,17 @@ export class MemStorage implements IStorage {
     this.bookings.set(booking2.id, booking2);
     
     // Mark the booked spots as "reserved"
-    const parkingSpace3 = this.getParkingSpaceBySpotNumber(parkingLotA.id, "A3");
-    if (parkingSpace3) {
-      parkingSpace3.status = "reserved";
-      this.parkingSpaces.set(parkingSpace3.id, parkingSpace3);
-    }
+    // const parkingSpace3 = this.getParkingSpaceBySpotNumber(parkingLotA.id, "A3");
+    // if (parkingSpace3) {
+    //   parkingSpace3.status = "reserved";
+    //   this.parkingSpaces.set(parkingSpace3.id, parkingSpace3);
+    // }
     
-    const parkingSpace8 = this.getParkingSpaceBySpotNumber(parkingLotA.id, "A8");
-    if (parkingSpace8) {
-      parkingSpace8.status = "reserved";
-      this.parkingSpaces.set(parkingSpace8.id, parkingSpace8);
-    }
+    // const parkingSpace8 = this.getParkingSpaceBySpotNumber(parkingLotA.id, "A8");
+    // if (parkingSpace8) {
+    //   parkingSpace8.status = "reserved";
+    //   this.parkingSpaces.set(parkingSpace8.id, parkingSpace8);
+    // }
     
     // Create sample reviews
     const review: Review = {
