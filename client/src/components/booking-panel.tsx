@@ -5,12 +5,12 @@ import { MapPin, Car, ArrowLeft, Calendar, Clock, Plus } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import ParkingSpotsLayout from "./parking-spots-layout";
-import { ParkingLot, ParkingSpace } from "@/hooks/use-parking";
+import { Layout, ParkingLot, ParkingSpace } from "@/hooks/use-parking";
 import { addDays, addHours, addMonths, differenceInDays, format, parseISO } from "date-fns";
 
 type BookingPanelProps = {
   parkingLot: ParkingLot;
-  parkingSpaces: ParkingSpace[];
+  parkingSpaces: Layout[];
   isSpacesLoading: boolean;
   selectedParkingSpace: ParkingSpace | null;
   setSelectedParkingSpace: (space: ParkingSpace | null) => void;
@@ -50,23 +50,21 @@ export default function BookingPanel({
   );
   const [monthCount, setMonthCount] = useState<number>(1);
   
-  // Group parking spaces by zone
-  const groupedSpaces = parkingSpaces.reduce((groups, space) => {
-    if (!groups[space.zone]) {
-      groups[space.zone] = [];
-    }
-    groups[space.zone].push(space);
-    return groups;
-  }, {} as Record<string, ParkingSpace[]>);
-  
-  const handleSpotSelect = (space: ParkingSpace) => {
-    if (space.status === "available") {
-      setSelectedParkingSpace(
-        selectedParkingSpace?.id === space.id ? null : space
-      );
+  const handleSpotSelect = (layoutIdx: number, rowIdx: number, slotIdx: number) => {
+    const layout = parkingSpaces[layoutIdx];
+    const row = layout.rows[rowIdx];
+    const slot = row.slots[slotIdx];
+    if (slot.status === "available") {
+      setSelectedParkingSpace({
+        id: Number(slot.id) || Number(`${layoutIdx}${rowIdx}${slotIdx}`),
+        parkingLotId: parkingLot.id,
+        spotNumber: `${row.prefix}${slotIdx + 1}`,
+        zone: layout.name,
+        status: slot.status,
+      });
     }
   };
-  
+
   // Add a date to selectedDates
   const handleAddDate = () => {
     // Add a new date (current date + length of current dates array)
@@ -153,7 +151,7 @@ export default function BookingPanel({
   };
   
   return (
-    <div className="border-t border-gray-200 p-4">
+    <div className="border-t border-gray-200 p-4 overflow-auto" style={{ maxHeight: "calc(100vh - 75px)" }}>
       <div className="flex items-center mb-4">
         <Button variant="ghost" size="sm" className="mr-2" onClick={onBack}>
           <ArrowLeft className="h-4 w-4" />
@@ -351,7 +349,6 @@ export default function BookingPanel({
       
       <div className="mb-6">
         <h3 className="font-medium mb-3">Chọn vị trí</h3>
-        
         {isSpacesLoading ? (
           <Card>
             <CardContent className="p-4 h-48 flex items-center justify-center">
@@ -359,19 +356,61 @@ export default function BookingPanel({
             </CardContent>
           </Card>
         ) : (
-          Object.entries(groupedSpaces).map(([zone, spaces]) => (
-            <div key={zone} className="mb-4">
-              <ParkingSpotsLayout
-                zone={zone}
-                spaces={spaces}
-                selectable={true}
-                selectedSpaceId={selectedParkingSpace?.id}
-                onSelectSpace={handleSpotSelect}
-              />
-            </div>
-          ))
+          <div className="space-y-6">
+            {parkingSpaces.map((layout, layoutIdx) => (
+              <div key={layoutIdx} className="mb-6">
+                <div className="font-semibold text-base mb-2 text-blue-700">{layout.name}</div>
+                <div className="overflow-auto border rounded-md p-4 bg-blue-50">
+                  {layout.rows.length > 0 ? (
+                    layout.rows.map((row, rowIdx) => (
+                      <div key={rowIdx} className="mb-3">
+                        <div className="flex items-center mb-1">
+                          <div className="text-gray-500 text-xs mr-2">
+                            Hàng {rowIdx + 1}:
+                          </div>
+                          <div className="text-blue-600 text-sm font-medium">
+                            {row.prefix} ({row.slots.length} chỗ)
+                          </div>
+                        </div>
+                        <div className="pb-2">
+                          <div className="flex gap-2 min-w-fit">
+                            {row.slots.map((slot, slotIdx) => {
+                              const isSelected = selectedParkingSpace &&
+                                selectedParkingSpace.zone === layout.name &&
+                                selectedParkingSpace.spotNumber === `${row.prefix}${slotIdx + 1}`;
+                              return (
+                                <div
+                                  key={slot.id || slotIdx}
+                                  className={`w-8 h-10 rounded-md flex items-center justify-center font-medium shadow-sm flex-shrink-0 text-white cursor-pointer ${
+                                    isSelected
+                                      ? "bg-green-500"
+                                      : slot.status === "available"
+                                      ? "bg-blue-500 hover:opacity-90"
+                                      : slot.status === "occupied"
+                                      ? "bg-orange-500 cursor-not-allowed"
+                                      : "bg-gray-400 cursor-not-allowed"
+                                  }`}
+                                  onClick={() => handleSpotSelect(layoutIdx, rowIdx, slotIdx)}
+                                >
+                                  {row.prefix}
+                                  {slotIdx + 1}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="h-full flex items-center justify-center text-gray-400">
+                      Không có hàng nào trong sơ đồ này
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
         )}
-        
         <div className="flex space-x-4 mt-3">
           <div className="flex items-center space-x-2">
             <div className="w-3 h-3 bg-blue-500 rounded"></div>

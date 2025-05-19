@@ -37,6 +37,7 @@ export const parkingLots = pgTable("parking_lots", {
   closingHour: text("closing_hour").notNull(),
   ownerId: integer("owner_id").notNull(),
   images: text("images").array(),
+  layouts: jsonb("layouts").array().notNull().default([]),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -53,6 +54,7 @@ export const insertParkingLotSchema = createInsertSchema(parkingLots).pick({
   closingHour: true,
   ownerId: true,
   images: true,
+  layouts: true,
 });
 
 // Parking spaces model

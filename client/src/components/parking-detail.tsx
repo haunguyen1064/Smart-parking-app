@@ -10,14 +10,13 @@ import {
   Info,
   Image,
 } from "lucide-react";
-import ParkingSpotsLayout from "./parking-spots-layout";
-import { ParkingLot, ParkingSpace } from "@/hooks/use-parking";
+import { Layout, ParkingLot } from "@/hooks/use-parking";
 import { RouteInfo } from "./simple-map";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 type ParkingDetailProps = {
   parkingLot: ParkingLot;
-  parkingSpaces: ParkingSpace[];
+  parkingSpaces: Layout[];
   isSpacesLoading: boolean;
   onBookNow: () => void;
   onBack: () => void;
@@ -34,25 +33,25 @@ export default function ParkingDetail({
   onNavigate,
   routes,
 }: ParkingDetailProps) {
-  // Group parking spaces by zone
-  const groupedSpaces = parkingSpaces.reduce(
-    (groups, space) => {
-      if (!groups[space.zone]) {
-        groups[space.zone] = [];
-      }
-      groups[space.zone].push(space);
-      return groups;
-    },
-    {} as Record<string, ParkingSpace[]>,
-  );
-
   // Calculate counts
-  const availableCount = parkingSpaces.filter(
-    (space) => space.status === "available",
-  ).length;
-  const occupiedCount = parkingSpaces.filter(
-    (space) => space.status === "occupied",
-  ).length;
+  const availableCount = parkingSpaces.reduce(
+    (acc, layout) =>
+      acc + layout.rows.reduce(
+        (rowAcc, row) =>
+          rowAcc + row.slots.filter((slot) => slot.status === "available").length,
+        0
+      ),
+    0
+  );
+  const occupiedCount = parkingSpaces.reduce(
+    (acc, layout) =>
+      acc + layout.rows.reduce(
+        (rowAcc, row) =>
+          rowAcc + row.slots.filter((slot) => slot.status === "occupied").length,
+        0
+      ),
+    0
+  );
 
   return (
     <div className="border-t border-gray-200 h-full flex flex-col overflow-auto">
@@ -140,10 +139,10 @@ export default function ParkingDetail({
                   </p>
                 ) : parkingSpaces.length === 0 ? (
                   <p className="text-center py-8 text-gray-400">
-                    Không có thông tin về chỗ đỗ xe
+                    Không có thông tin về sơ đồ bãi xe
                   </p>
                 ) : (
-                  <div className="space-y-4">
+                  <div className="space-y-6">
                     <div className="flex justify-center gap-4 text-sm">
                       <div className="flex items-center">
                         <div className="w-3 h-3 rounded-full bg-blue-500 mr-1"></div>
@@ -154,10 +153,48 @@ export default function ParkingDetail({
                         <span>Đã sử dụng ({occupiedCount})</span>
                       </div>
                     </div>
-
-                    {Object.entries(groupedSpaces).map(([zone, spaces]) => (
-                      <div key={zone} className="mt-4">
-                        <ParkingSpotsLayout zone={zone} spaces={spaces} />
+                    {parkingSpaces.map((layout, layoutIdx) => (
+                      <div key={layoutIdx} className="mb-6">
+                        <div className="font-semibold text-base mb-2 text-blue-700">{layout.name}</div>
+                        <div className="overflow-auto  border rounded-md p-4 bg-blue-50">
+                          {layout.rows.length > 0 ? (
+                            layout.rows.map((row, rowIdx) => (
+                              <div key={rowIdx} className="mb-3">
+                                <div className="flex items-center mb-1">
+                                  <div className="text-gray-500 text-xs mr-2">
+                                    Hàng {rowIdx + 1}:
+                                  </div>
+                                  <div className="text-blue-600 text-sm font-medium">
+                                    {row.prefix} ({row.slots.length} chỗ)
+                                  </div>
+                                </div>
+                                <div className="pb-2">
+                                  <div className="flex gap-2 min-w-fit">
+                                    {row.slots.map((slot, slotIdx) => (
+                                      <div
+                                        key={slot.id || slotIdx}
+                                        className={`w-8 h-10 rounded-md flex items-center justify-center font-medium shadow-sm flex-shrink-0 text-white ${
+                                          slot.status === "available"
+                                            ? "bg-blue-500"
+                                            : slot.status === "occupied"
+                                            ? "bg-orange-500"
+                                            : "bg-gray-400"
+                                        }`}
+                                      >
+                                        {row.prefix}
+                                        {slotIdx + 1}
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              </div>
+                            ))
+                          ) : (
+                            <div className="h-full flex items-center justify-center text-gray-400">
+                              Không có hàng nào trong sơ đồ này
+                            </div>
+                          )}
+                        </div>
                       </div>
                     ))}
                   </div>

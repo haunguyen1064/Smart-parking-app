@@ -5,7 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useMapSelect } from "@/hooks/map-select-context";
-import { useCreateParkingLot } from "@/hooks/use-parking";
+import { Layout, useCreateParkingLot } from "@/hooks/use-parking";
 import ParkingLayoutModal, { ParkingLayoutConfig } from "./parking-layout-modal";
 
 type RegisterParkingLotPanelProps = {
@@ -87,6 +87,22 @@ export default function RegisterParkingLotPanel({ onBack }: RegisterParkingLotPa
     // Lấy lat/lng
     const latitude = selectedLocation?.lat?.toString() || "";
     const longitude = selectedLocation?.lng?.toString() || "";
+
+    let layouts: Layout[] = [];
+    if (parkingLayout) {
+      layouts = [
+        {
+          name: parkingLayout.name,
+          rows: parkingLayout.rows.map((row) => ({
+            prefix: row.prefix,
+            slots: Array.from({ length: row.slotCount }).map((_, i) => ({
+              id: `${row.prefix}${i + 1}`,
+              status: "available"
+            }))
+          }))
+        }
+      ];
+    }
     // Tạo dữ liệu gửi đi
     const data = {
       name,
@@ -100,6 +116,7 @@ export default function RegisterParkingLotPanel({ onBack }: RegisterParkingLotPa
       openingHour: "06:00",
       closingHour: "22:00",
       images: [],
+      layouts,
     };
     createParkingLot.mutate(data);
   };

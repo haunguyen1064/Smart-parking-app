@@ -4,7 +4,7 @@ import ParkingDetail from "./parking-detail";
 import BookingPanel from "./booking-panel";
 import HomePanel from "./home-panel";
 import RegisterParkingLotPanel from "./register-parking-lot-panel";
-import { ParkingLot, ParkingSpace } from "@/hooks/use-parking";
+import { Layout, ParkingLot, ParkingSpace } from "@/hooks/use-parking";
 import { RouteInfo } from "./simple-map";
 import { useAuth } from "@/hooks/use-auth";
 
@@ -15,7 +15,7 @@ type ContentPanelProps = {
   isLoading: boolean;
   selectedParkingLot: ParkingLot | null;
   setSelectedParkingLot: (parkingLot: ParkingLot | null) => void;
-  parkingSpaces: ParkingSpace[] | undefined;
+  parkingSpaces: Layout[] | undefined;
   isSpacesLoading: boolean;
   selectedParkingSpace: ParkingSpace | null;
   setSelectedParkingSpace: (parkingSpace: ParkingSpace | null) => void;

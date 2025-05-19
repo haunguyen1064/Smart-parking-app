@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Navbar } from "@/components/navbar";
 import SimpleMap, { ParkingLotMarker, RouteInfo } from "@/components/simple-map";
 import ContentPanel, { type PanelType } from "@/components/content-panel";
-import { ParkingLot, ParkingSpace } from "@/hooks/use-parking";
+import { Layout, ParkingLot, ParkingSpace } from "@/hooks/use-parking";
 import { useAuth } from "@/hooks/use-auth";
 import { apiRequest } from "@/lib/queryClient";
 import { queryClient } from "@/lib/queryClient";
@@ -35,7 +35,7 @@ export default function Home() {
   const {
     data: parkingSpaces,
     isLoading: isParkingSpacesLoading,
-  } = useQuery<ParkingSpace[]>({
+  } = useQuery<Layout[]>({
     queryKey: [
       `/api/parking-lots/${selectedParkingLot?.id}/spaces`,
       selectedParkingLot?.id,

@@ -29,6 +29,10 @@ export type ParkingSpace = {
   status: "available" | "occupied" | "reserved";
 };
 
+type ParkingSlot = { id: string; status: "available" | "occupied" };
+type LayoutRow = { prefix: string; slots: ParkingSlot[] };
+export type Layout = { name: string; rows: LayoutRow[] };
+
 export type Booking = {
   id: number;
   userId: number;
@@ -47,13 +51,13 @@ interface ParkingContextProps {
   isParkingLotsLoading: boolean;
   selectedParkingLot: ParkingLot | null;
   setSelectedParkingLot: (parkingLot: ParkingLot | null) => void;
-  
+
   // Parking Spaces
   parkingSpaces: ParkingSpace[] | undefined;
   isParkingSpacesLoading: boolean;
   selectedParkingSpace: ParkingSpace | null;
   setSelectedParkingSpace: (parkingSpace: ParkingSpace | null) => void;
-  
+
   // Bookings
   createBooking: (booking: CreateBookingParams) => Promise<void>;
   isBookingLoading: boolean;
@@ -67,43 +71,45 @@ type CreateBookingParams = {
   totalPrice: number;
 };
 
-const ParkingContext = createContext<ParkingContextProps | undefined>(undefined);
+const ParkingContext = createContext<ParkingContextProps | undefined>(
+  undefined
+);
 
 export function ParkingProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
-  
+
   // Get all parking lots
-  const {
-    data: parkingLots,
-    isLoading: isParkingLotsLoading,
-  } = useQuery<ParkingLot[]>({
+  const { data: parkingLots, isLoading: isParkingLotsLoading } = useQuery<
+    ParkingLot[]
+  >({
     queryKey: ["/api/parking-lots"],
   });
-  
+
   // State for selected parking lot
-  const [selectedParkingLot, setSelectedParkingLotState] = useState<ParkingLot | null>(null);
-  
+  const [selectedParkingLot, setSelectedParkingLotState] =
+    useState<ParkingLot | null>(null);
+
   // Get parking spaces for selected parking lot
-  const {
-    data: parkingSpaces,
-    isLoading: isParkingSpacesLoading,
-  } = useQuery<ParkingSpace[]>({
+  const { data: parkingSpaces, isLoading: isParkingSpacesLoading } = useQuery<
+    ParkingSpace[]
+  >({
     queryKey: [
       `/api/parking-lots/${selectedParkingLot?.id}/spaces`,
       selectedParkingLot?.id,
     ],
     enabled: !!selectedParkingLot,
   });
-  
+
   // State for selected parking space
-  const [selectedParkingSpace, setSelectedParkingSpace] = useState<ParkingSpace | null>(null);
-  
+  const [selectedParkingSpace, setSelectedParkingSpace] =
+    useState<ParkingSpace | null>(null);
+
   // Set selected parking lot and reset selected parking space
   const setSelectedParkingLot = (parkingLot: ParkingLot | null) => {
     setSelectedParkingLotState(parkingLot);
     setSelectedParkingSpace(null);
   };
-  
+
   // Create booking mutation
   const bookingMutation = useMutation({
     mutationFn: async (params: CreateBookingParams) => {
@@ -115,7 +121,7 @@ export function ParkingProvider({ children }: { children: ReactNode }) {
         title: "Booking created successfully",
         description: "Your parking space has been reserved.",
       });
-      
+
       // Invalidate relevant queries
       queryClient.invalidateQueries({ queryKey: ["/api/bookings"] });
       if (selectedParkingLot) {
@@ -123,7 +129,7 @@ export function ParkingProvider({ children }: { children: ReactNode }) {
           queryKey: [`/api/parking-lots/${selectedParkingLot.id}/spaces`],
         });
       }
-      
+
       // Reset selected parking space
       setSelectedParkingSpace(null);
     },
@@ -135,11 +141,11 @@ export function ParkingProvider({ children }: { children: ReactNode }) {
       });
     },
   });
-  
+
   const createBooking = async (params: CreateBookingParams) => {
     await bookingMutation.mutateAsync(params);
   };
-  
+
   return (
     <ParkingContext.Provider
       value={{

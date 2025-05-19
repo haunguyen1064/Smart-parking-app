@@ -110,7 +110,35 @@ export class MemStorage implements IStorage {
         "https://plus.unsplash.com/premium_photo-1661962915138-c10a03d4ae28?q=80&w=2071&auto=format&fit=crop&w=800&h=400",
         "https://images.unsplash.com/photo-1593280405106-e438ebe93f5b?q=80&w=2080&auto=format&fit=crop&w=800&h=400"
       ],
-      createdAt: new Date()
+      createdAt: new Date(),
+      layouts: [
+        {
+          name: "Khu A",
+          rows: [
+            {
+              prefix: "A",
+              slots: Array.from({ length: 6 }).map((_, i) => ({
+                id: `A${i+1}`,
+                status: [4,7].includes(i+1) ? "occupied" : "available"
+              }))
+            },
+            {
+              prefix: "B",
+              slots: Array.from({ length: 5 }).map((_, i) => ({
+                id: `B${i+1}`,
+                status: "available"
+              }))
+            },
+            {
+              prefix: "C",
+              slots: Array.from({ length: 6 }).map((_, i) => ({
+                id: `C${i+1}`,
+                status: [1,2,3].includes(i+1) ? "occupied" : "available"
+              }))
+            }
+          ]
+        }
+      ]
     };
     this.parkingLots.set(parkingLotA.id, parkingLotA);
     
@@ -130,7 +158,28 @@ export class MemStorage implements IStorage {
       images: [
         "https://images.unsplash.com/photo-1573348722427-f1d6819fdf98?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=400"
       ],
-      createdAt: new Date()
+      createdAt: new Date(),
+      layouts: [
+        {
+          name: "Khu Chính",
+          rows: [
+            {
+              prefix: "A",
+              slots: Array.from({ length: 8 }).map((_, i) => ({
+                id: `A${i+1}`,
+                status: "occupied"
+              }))
+            },
+            {
+              prefix: "B",
+              slots: Array.from({ length: 10 }).map((_, i) => ({
+                id: `B${i+1}`,
+                status: "occupied"
+              }))
+            }
+          ]
+        }
+      ]
     };
     this.parkingLots.set(parkingLotB.id, parkingLotB);
     
@@ -150,7 +199,21 @@ export class MemStorage implements IStorage {
       images: [
         "https://images.unsplash.com/photo-1506521781263-d8422e82f27a?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=400"
       ],
-      createdAt: new Date()
+      createdAt: new Date(),
+      layouts: [
+        {
+          name: "Khu C",
+          rows: [
+            {
+              prefix: "C",
+              slots: Array.from({ length: 15 }).map((_, i) => ({
+                id: `C${i+1}`,
+                status: "available"
+              }))
+            }
+          ]
+        }
+      ]
     };
     this.parkingLots.set(parkingLotC.id, parkingLotC);
     
@@ -285,7 +348,10 @@ export class MemStorage implements IStorage {
     const parkingLot: ParkingLot = { 
       ...insertParkingLot, 
       id, 
-      createdAt: new Date() 
+      createdAt: new Date(),
+      description: insertParkingLot.description ?? null,
+      images: insertParkingLot.images ?? [],
+      layouts: insertParkingLot.layouts ?? [], // Đảm bảo layouts luôn có giá trị mảng
     };
     this.parkingLots.set(id, parkingLot);
     return parkingLot;
@@ -294,8 +360,8 @@ export class MemStorage implements IStorage {
   async updateParkingLot(id: number, updates: Partial<ParkingLot>): Promise<ParkingLot | undefined> {
     const parkingLot = this.parkingLots.get(id);
     if (!parkingLot) return undefined;
-    
     const updatedParkingLot = { ...parkingLot, ...updates };
+    if (!updatedParkingLot.layouts) updatedParkingLot.layouts = [];
     this.parkingLots.set(id, updatedParkingLot);
     return updatedParkingLot;
   }
@@ -313,7 +379,11 @@ export class MemStorage implements IStorage {
   
   async createParkingSpace(insertParkingSpace: InsertParkingSpace): Promise<ParkingSpace> {
     const id = this.parkingSpaceId++;
-    const parkingSpace: ParkingSpace = { ...insertParkingSpace, id };
+    const parkingSpace: ParkingSpace = { 
+      ...insertParkingSpace, 
+      id,
+      status: insertParkingSpace.status ?? "available"
+    };
     this.parkingSpaces.set(id, parkingSpace);
     return parkingSpace;
   }
@@ -357,7 +427,8 @@ export class MemStorage implements IStorage {
     const booking: Booking = { 
       ...insertBooking, 
       id, 
-      createdAt: new Date() 
+      createdAt: new Date(),
+      status: insertBooking.status ?? "pending"
     };
     this.bookings.set(id, booking);
     
@@ -400,7 +471,8 @@ export class MemStorage implements IStorage {
     const review: Review = { 
       ...insertReview, 
       id, 
-      createdAt: new Date() 
+      createdAt: new Date(),
+      comment: insertReview.comment ?? null
     };
     this.reviews.set(id, review);
     return review;

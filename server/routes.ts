@@ -215,8 +215,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Parking lot not found" });
       }
       
-      const spaces = await storage.getParkingSpaces(parkingLotId);
-      res.status(200).json(spaces);
+      res.status(200).json(parkingLot.layouts);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch parking spaces" });
     }
