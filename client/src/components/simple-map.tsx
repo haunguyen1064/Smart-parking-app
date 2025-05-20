@@ -241,18 +241,16 @@ export default function SimpleMap({
             longitude: parseFloat(marker.longitude),
             latitude: parseFloat(marker.latitude)
           });
-          
-          // Create symbol based on selection state
+
+          // Use a custom SVG icon for parking lot marker
           const markerSymbol = {
-            type: "simple-marker",
-            color: marker.isSelected ? [255, 0, 0] : [68, 50, 183], // Red if selected, purple otherwise
-            outline: {
-              color: [255, 255, 255],
-              width: 2
-            },
-            size: marker.isSelected ? 14 : 10 // Larger if selected
+            type: "picture-marker",
+            url: "/assets/parking-marker.png",
+            width: marker.isSelected ? "38px" : "28px",
+            height: marker.isSelected ? "38px" : "28px",
+            yoffset: 10
           };
-          
+
           // Create graphics for markers
           const markerGraphic = new Graphic({
             geometry: point,
