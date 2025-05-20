@@ -56,7 +56,7 @@ export default function BookingPanel({
     const slot = row.slots[slotIdx];
     if (slot.status === "available") {
       setSelectedParkingSpace({
-        id: Number(slot.id) || Number(`${layoutIdx}${rowIdx}${slotIdx}`),
+        id: `${layoutIdx}_${rowIdx}_${slotIdx}`,
         parkingLotId: parkingLot.id,
         spotNumber: `${row.prefix}${slotIdx + 1}`,
         zone: layout.name,

@@ -37,7 +37,7 @@ export default function Home() {
     isLoading: isParkingSpacesLoading,
   } = useQuery<Layout[]>({
     queryKey: [
-      `/api/parking-lots/${selectedParkingLot?.id}/spaces`,
+      `/api/parking-lots/${selectedParkingLot?.id}/layouts`,
       selectedParkingLot?.id,
     ],
     enabled: !!selectedParkingLot,
@@ -146,18 +146,15 @@ export default function Home() {
       
       toast({
         title: "Đặt chỗ thành công",
-        description: "Vui lòng kiểm tra thông tin đặt chỗ của bạn.",
+        description: "",
       });
-      
-      // Reset selected parking space
-      setSelectedParkingSpace(null);
       
       // Invalidate queries to refresh data
       queryClient.invalidateQueries({
-        queryKey: [`/api/parking-lots/${selectedParkingLot?.id}/spaces`],
-      });
-      queryClient.invalidateQueries({
-        queryKey: ["/api/parking-lots"],
+        queryKey: [`/api/parking-lots/${selectedParkingLot?.id}/layouts`],
+      }).then(() => {
+        // Reset selected parking space
+        setSelectedParkingSpace(null);
       });
     } catch (error) {
       toast({

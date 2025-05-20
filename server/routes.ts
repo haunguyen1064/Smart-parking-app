@@ -6,7 +6,7 @@ import { z } from "zod";
 import {
   insertUserSchema,
   insertParkingLotSchema,
-  insertParkingSpaceSchema,
+  insertParkingLayoutSchema,
   insertBookingSchema,
   insertReviewSchema,
 } from "@shared/schema";
@@ -177,8 +177,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ...req.body,
         ownerId: (req.session as any).userId
       });
-      
       const parkingLot = await storage.createParkingLot(parkingLotData);
+      // Tạo layout cho từng layout trong parkingLotData.layouts
+      if (Array.isArray(parkingLotData.layouts)) {
+        for (const layout of parkingLotData.layouts) {
+          if (layout && typeof layout === 'object' && 'name' in layout && 'rows' in layout) {
+            await storage.createParkingLayout({
+              parkingLotId: parkingLot.id,
+              name: (layout as any).name,
+              rows: (layout as any).rows
+            });
+          }
+        }
+      }
       res.status(201).json(parkingLot);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -205,64 +216,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Parking space routes
-  app.get("/api/parking-lots/:id/spaces", async (req, res) => {
+  // Parking layout routes
+  app.get("/api/parking-lots/:id/layouts", async (req, res) => {
     try {
       const parkingLotId = parseInt(req.params.id);
       const parkingLot = await storage.getParkingLot(parkingLotId);
-      
       if (!parkingLot) {
         return res.status(404).json({ message: "Parking lot not found" });
       }
-      
-      res.status(200).json(parkingLot.layouts);
+      const layouts = await storage.getParkingLayouts(parkingLotId);
+      res.status(200).json(layouts);
     } catch (error) {
-      res.status(500).json({ message: "Failed to fetch parking spaces" });
+      res.status(500).json({ message: "Failed to fetch parking layouts" });
     }
   });
 
-  app.post("/api/parking-spaces", requireOwner, async (req, res) => {
+  app.get("/api/layouts/:id", async (req, res) => {
     try {
-      const spaceData = insertParkingSpaceSchema.parse(req.body);
-      
-      const parkingLot = await storage.getParkingLot(spaceData.parkingLotId);
+      const id = parseInt(req.params.id);
+      const layout = await storage.getParkingLayout(id);
+      if (!layout) {
+        return res.status(404).json({ message: "Parking layout not found" });
+      }
+      res.status(200).json(layout);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch parking layout" });
+    }
+  });
+
+  app.post("/api/layouts", requireOwner, async (req, res) => {
+    try {
+      const layoutData = insertParkingLayoutSchema.parse(req.body);
+      const parkingLot = await storage.getParkingLot(layoutData.parkingLotId);
       if (!parkingLot) {
         return res.status(404).json({ message: "Parking lot not found" });
       }
-      
-      if (parkingLot.ownerId !== req.session.userId) {
-        return res.status(403).json({ message: "Not authorized to add spaces to this parking lot" });
+      if (parkingLot.ownerId !== (req.session as any).userId) {
+        return res.status(403).json({ message: "Not authorized to add layout to this parking lot" });
       }
-      
-      const space = await storage.createParkingSpace(spaceData);
-      res.status(201).json(space);
+      const layout = await storage.createParkingLayout(layoutData);
+      res.status(201).json(layout);
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: error.errors });
       }
-      res.status(500).json({ message: "Failed to create parking space" });
+      res.status(500).json({ message: "Failed to create parking layout" });
     }
   });
 
-  app.patch("/api/parking-spaces/:id/status", requireOwner, async (req, res) => {
+  app.patch("/api/layouts/:id", requireOwner, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      const { status } = req.body;
-      if (!["available", "occupied", "reserved"].includes(status)) {
-        return res.status(400).json({ message: "Invalid status" });
+      const layout = await storage.getParkingLayout(id);
+      if (!layout) {
+        return res.status(404).json({ message: "Parking layout not found" });
       }
-      const space = await storage.getParkingSpace(id);
-      if (!space) {
-        return res.status(404).json({ message: "Parking space not found" });
-      }
-      const parkingLot = await storage.getParkingLot(space.parkingLotId);
+      const parkingLot = await storage.getParkingLot(layout.parkingLotId);
       if (!parkingLot || parkingLot.ownerId !== (req.session as any).userId) {
-        return res.status(403).json({ message: "Not authorized to update this parking space" });
+        return res.status(403).json({ message: "Not authorized to update this layout" });
       }
-      const updatedSpace = await storage.updateParkingSpaceStatus(id, status);
-      res.status(200).json(updatedSpace);
+      const updatedLayout = await storage.updateParkingLayout(id, req.body);
+      res.status(200).json(updatedLayout);
     } catch (error) {
-      res.status(500).json({ message: "Failed to update parking space status" });
+      res.status(500).json({ message: "Failed to update parking layout" });
     }
   });
 
@@ -312,16 +328,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         bookingInput.endTime = new Date(bookingInput.endTime);
       }
       const bookingData = insertBookingSchema.parse(bookingInput);
-      // Check if space is available
-      const space = await storage.getParkingSpace(bookingData.parkingSpaceId);
-      if (!space) {
-        return res.status(404).json({ message: "Parking space not found" });
-      }
-      if (space.status !== "available") {
-        return res.status(400).json({ message: "Parking space is not available" });
-      }
-      // Create booking
+
       const booking = await storage.createBooking(bookingData);
+
+      // Update layout slot status
+      // bookingData.parkingSpaceId: `${layoutIdx}_${rowIdx}_${slotIdx}`
+      if (typeof bookingData.parkingSpaceId === 'string') {
+        const [layoutIdx, rowIdx, slotIdx] = bookingData.parkingSpaceId.split('_').map(Number);
+        const layouts = await storage.getParkingLayouts(bookingData.parkingLotId);
+        const layout = layouts[layoutIdx];
+        if (layout) {
+          const rows = Array.isArray(layout.rows) ? [...layout.rows] : [];
+          if (rows[rowIdx] && rows[rowIdx].slots[slotIdx]) {
+            rows[rowIdx].slots[slotIdx] = {
+              ...rows[rowIdx].slots[slotIdx],
+              status: 'occupied',
+            };
+            await storage.updateParkingLayout(layout.id, { rows });
+          }
+        }
+      }
+
       res.status(201).json(booking);
     } catch (error) {
       if (error instanceof z.ZodError) {

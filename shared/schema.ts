@@ -57,20 +57,23 @@ export const insertParkingLotSchema = createInsertSchema(parkingLots).pick({
   layouts: true,
 });
 
-// Parking spaces model
-export const parkingSpaces = pgTable("parking_spaces", {
+// Parking layouts model
+export const parkingLayouts = pgTable("parking_layouts", {
   id: serial("id").primaryKey(),
   parkingLotId: integer("parking_lot_id").notNull(),
-  spotNumber: text("spot_number").notNull(),
-  zone: text("zone").notNull(),
-  status: text("status").notNull().default("available"), // available, occupied, reserved
+  name: text("name").notNull(),
+  rows: jsonb("rows").notNull(), // array of LayoutRow
 });
 
-export const insertParkingSpaceSchema = createInsertSchema(parkingSpaces).pick({
-  parkingLotId: true,
-  spotNumber: true,
-  zone: true,
-  status: true,
+export const insertParkingLayoutSchema = z.object({
+  parkingLotId: z.number(),
+  name: z.string(),
+  rows: z.array(
+    z.object({
+      prefix: z.string(),
+      slots: z.array(z.object({ id: z.string(), status: z.string() }))
+    })
+  ),
 });
 
 // Booking model
@@ -78,7 +81,7 @@ export const bookings = pgTable("bookings", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull(),
   parkingLotId: integer("parking_lot_id").notNull(),
-  parkingSpaceId: integer("parking_space_id").notNull(),
+  parkingSpaceId: text("parking_space_id").notNull(),
   startTime: timestamp("start_time").notNull(),
   endTime: timestamp("end_time").notNull(),
   status: text("status").notNull().default("pending"), // pending, confirmed, completed, cancelled
@@ -120,8 +123,8 @@ export type InsertUser = z.infer<typeof insertUserSchema>;
 export type ParkingLot = typeof parkingLots.$inferSelect;
 export type InsertParkingLot = z.infer<typeof insertParkingLotSchema>;
 
-export type ParkingSpace = typeof parkingSpaces.$inferSelect;
-export type InsertParkingSpace = z.infer<typeof insertParkingSpaceSchema>;
+export type ParkingLayout = typeof parkingLayouts.$inferSelect;
+export type InsertParkingLayout = z.infer<typeof insertParkingLayoutSchema>;
 
 export type Booking = typeof bookings.$inferSelect;
 export type InsertBooking = z.infer<typeof insertBookingSchema>;

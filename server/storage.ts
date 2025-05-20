@@ -1,7 +1,7 @@
 import {
   users, User, InsertUser,
   parkingLots, ParkingLot, InsertParkingLot,
-  parkingSpaces, ParkingSpace, InsertParkingSpace,
+  parkingLayouts, ParkingLayout, InsertParkingLayout,
   bookings, Booking, InsertBooking,
   reviews, Review, InsertReview
 } from "@shared/schema";
@@ -19,12 +19,12 @@ export interface IStorage {
   getParkingLotsByOwner(ownerId: number): Promise<ParkingLot[]>;
   createParkingLot(parkingLot: InsertParkingLot): Promise<ParkingLot>;
   updateParkingLot(id: number, parkingLot: Partial<ParkingLot>): Promise<ParkingLot | undefined>;
-  
-  // Parking space operations
-  getParkingSpaces(parkingLotId: number): Promise<ParkingSpace[]>;
-  getParkingSpace(id: number): Promise<ParkingSpace | undefined>;
-  createParkingSpace(parkingSpace: InsertParkingSpace): Promise<ParkingSpace>;
-  updateParkingSpaceStatus(id: number, status: string): Promise<ParkingSpace | undefined>;
+
+  // Parking layout operations
+  getParkingLayouts(parkingLotId: number): Promise<ParkingLayout[]>;
+  getParkingLayout(id: number): Promise<ParkingLayout | undefined>;
+  createParkingLayout(layout: InsertParkingLayout): Promise<ParkingLayout>;
+  updateParkingLayout(id: number, layout: Partial<ParkingLayout>): Promise<ParkingLayout | undefined>;
   
   // Booking operations
   getBookings(userId?: number, parkingLotId?: number): Promise<Booking[]>;
@@ -40,33 +40,33 @@ export interface IStorage {
 export class MemStorage implements IStorage {
   private users: Map<number, User>;
   private parkingLots: Map<number, ParkingLot>;
-  private parkingSpaces: Map<number, ParkingSpace>;
+  private parkingLayouts: Map<number, ParkingLayout>;
   private bookings: Map<number, Booking>;
   private reviews: Map<number, Review>;
-  
+
   private userId: number;
   private parkingLotId: number;
-  private parkingSpaceId: number;
+  private parkingLayoutId: number;
   private bookingId: number;
   private reviewId: number;
-  
+
   constructor() {
     this.users = new Map();
     this.parkingLots = new Map();
-    this.parkingSpaces = new Map();
+    this.parkingLayouts = new Map();
     this.bookings = new Map();
     this.reviews = new Map();
-    
+
     this.userId = 1;
     this.parkingLotId = 1;
-    this.parkingSpaceId = 1;
+    this.parkingLayoutId = 1;
     this.bookingId = 1;
     this.reviewId = 1;
-    
+
     // Initialize with sample data
     this.initializeSampleData();
   }
-  
+
   private initializeSampleData() {
     // Create a sample owner
     const owner: User = {
@@ -217,30 +217,15 @@ export class MemStorage implements IStorage {
     };
     this.parkingLots.set(parkingLotC.id, parkingLotC);
     
-    // Create sample parking spaces for Parking Lot A
-    for (let i = 1; i <= 10; i++) {
-      const status = [4, 7].includes(i) ? "occupied" : "available";
-      const parkingSpace: ParkingSpace = {
-        id: this.parkingSpaceId++,
-        parkingLotId: parkingLotA.id,
-        spotNumber: `A${i}`,
-        zone: "A",
-        status
+    // Create sample layouts for each parking lot
+    for (const lot of this.parkingLots.values()) {
+      const layout: ParkingLayout = {
+        id: this.parkingLayoutId++,
+        parkingLotId: lot.id,
+        name: `Sơ đồ của ${lot.name}`,
+        rows: ((lot.layouts[0]) as {rows: string[]}).rows
       };
-      this.parkingSpaces.set(parkingSpace.id, parkingSpace);
-    }
-    
-    // Create sample parking spaces for Parking Lot B
-    for (let i = 1; i <= 10; i++) {
-      const status = "occupied"; // All spaces occupied
-      const parkingSpace: ParkingSpace = {
-        id: this.parkingSpaceId++,
-        parkingLotId: parkingLotB.id,
-        spotNumber: `B${i}`,
-        zone: "B",
-        status
-      };
-      this.parkingSpaces.set(parkingSpace.id, parkingSpace);
+      this.parkingLayouts.set(layout.id, layout);
     }
     
     // Create sample bookings
@@ -270,19 +255,6 @@ export class MemStorage implements IStorage {
     };
     this.bookings.set(booking2.id, booking2);
     
-    // Mark the booked spots as "reserved"
-    // const parkingSpace3 = this.getParkingSpaceBySpotNumber(parkingLotA.id, "A3");
-    // if (parkingSpace3) {
-    //   parkingSpace3.status = "reserved";
-    //   this.parkingSpaces.set(parkingSpace3.id, parkingSpace3);
-    // }
-    
-    // const parkingSpace8 = this.getParkingSpaceBySpotNumber(parkingLotA.id, "A8");
-    // if (parkingSpace8) {
-    //   parkingSpace8.status = "reserved";
-    //   this.parkingSpaces.set(parkingSpace8.id, parkingSpace8);
-    // }
-    
     // Create sample reviews
     const review: Review = {
       id: this.reviewId++,
@@ -293,15 +265,6 @@ export class MemStorage implements IStorage {
       createdAt: new Date()
     };
     this.reviews.set(review.id, review);
-  }
-  
-  private getParkingSpaceBySpotNumber(parkingLotId: number, spotNumber: string): ParkingSpace | undefined {
-    for (const space of this.parkingSpaces.values()) {
-      if (space.parkingLotId === parkingLotId && space.spotNumber === spotNumber) {
-        return space;
-      }
-    }
-    return undefined;
   }
   
   // User operations
@@ -351,7 +314,7 @@ export class MemStorage implements IStorage {
       createdAt: new Date(),
       description: insertParkingLot.description ?? null,
       images: insertParkingLot.images ?? [],
-      layouts: insertParkingLot.layouts ?? [], // Đảm bảo layouts luôn có giá trị mảng
+      layouts: insertParkingLot.layouts ?? [],
     };
     this.parkingLots.set(id, parkingLot);
     return parkingLot;
@@ -365,49 +328,31 @@ export class MemStorage implements IStorage {
     this.parkingLots.set(id, updatedParkingLot);
     return updatedParkingLot;
   }
-  
-  // Parking space operations
-  async getParkingSpaces(parkingLotId: number): Promise<ParkingSpace[]> {
-    return Array.from(this.parkingSpaces.values()).filter(
-      (space) => space.parkingLotId === parkingLotId
-    );
+
+  // Parking layout operations
+  async getParkingLayouts(parkingLotId: number): Promise<ParkingLayout[]> {
+    return Array.from(this.parkingLayouts.values()).filter(l => l.parkingLotId === parkingLotId);
   }
   
-  async getParkingSpace(id: number): Promise<ParkingSpace | undefined> {
-    return this.parkingSpaces.get(id);
+  async getParkingLayout(id: number): Promise<ParkingLayout | undefined> {
+    return this.parkingLayouts.get(id);
   }
   
-  async createParkingSpace(insertParkingSpace: InsertParkingSpace): Promise<ParkingSpace> {
-    const id = this.parkingSpaceId++;
-    const parkingSpace: ParkingSpace = { 
-      ...insertParkingSpace, 
-      id,
-      status: insertParkingSpace.status ?? "available"
-    };
-    this.parkingSpaces.set(id, parkingSpace);
-    return parkingSpace;
+  async createParkingLayout(insertLayout: InsertParkingLayout): Promise<ParkingLayout> {
+    const id = this.parkingLayoutId++;
+    const layout: ParkingLayout = { ...insertLayout, id };
+    this.parkingLayouts.set(id, layout);
+    return layout;
   }
   
-  async updateParkingSpaceStatus(id: number, status: string): Promise<ParkingSpace | undefined> {
-    const parkingSpace = this.parkingSpaces.get(id);
-    if (!parkingSpace) return undefined;
-    
-    const updatedSpace = { ...parkingSpace, status };
-    this.parkingSpaces.set(id, updatedSpace);
-    
-    // Update available spots in the parking lot
-    const parkingLot = this.parkingLots.get(updatedSpace.parkingLotId);
-    if (parkingLot) {
-      const allSpaces = await this.getParkingSpaces(parkingLot.id);
-      const availableCount = allSpaces.filter(space => space.status === "available").length;
-      
-      const updatedParkingLot = { ...parkingLot, availableSpots: availableCount };
-      this.parkingLots.set(parkingLot.id, updatedParkingLot);
-    }
-    
-    return updatedSpace;
+  async updateParkingLayout(id: number, updates: Partial<ParkingLayout>): Promise<ParkingLayout | undefined> {
+    const layout = this.parkingLayouts.get(id);
+    if (!layout) return undefined;
+    const updatedLayout = { ...layout, ...updates };
+    this.parkingLayouts.set(id, updatedLayout);
+    return updatedLayout;
   }
-  
+
   // Booking operations
   async getBookings(userId?: number, parkingLotId?: number): Promise<Booking[]> {
     return Array.from(this.bookings.values()).filter(booking => {
@@ -432,33 +377,17 @@ export class MemStorage implements IStorage {
     };
     this.bookings.set(id, booking);
     
-    // Update the parking space status to reserved
-    const parkingSpace = await this.getParkingSpace(booking.parkingSpaceId);
-    if (parkingSpace) {
-      await this.updateParkingSpaceStatus(parkingSpace.id, "reserved");
-    }
-    
     return booking;
   }
   
   async updateBookingStatus(id: number, status: string): Promise<Booking | undefined> {
     const booking = this.bookings.get(id);
     if (!booking) return undefined;
-    
     const updatedBooking = { ...booking, status };
     this.bookings.set(id, updatedBooking);
-    
-    // If cancelled, update the parking space status back to available
-    if (status === "cancelled") {
-      const parkingSpace = await this.getParkingSpace(booking.parkingSpaceId);
-      if (parkingSpace) {
-        await this.updateParkingSpaceStatus(parkingSpace.id, "available");
-      }
-    }
-    
     return updatedBooking;
   }
-  
+
   // Review operations
   async getReviews(parkingLotId: number): Promise<Review[]> {
     return Array.from(this.reviews.values()).filter(

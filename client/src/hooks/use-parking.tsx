@@ -22,7 +22,7 @@ export type ParkingLot = {
 };
 
 export type ParkingSpace = {
-  id: number;
+  id: string;
   parkingLotId: number;
   spotNumber: string;
   zone: string;
@@ -126,7 +126,7 @@ export function ParkingProvider({ children }: { children: ReactNode }) {
       queryClient.invalidateQueries({ queryKey: ["/api/bookings"] });
       if (selectedParkingLot) {
         queryClient.invalidateQueries({
-          queryKey: [`/api/parking-lots/${selectedParkingLot.id}/spaces`],
+          queryKey: [`/api/parking-lots/${selectedParkingLot.id}/layouts`],
         });
       }
 
