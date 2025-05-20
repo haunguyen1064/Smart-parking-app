@@ -7,6 +7,7 @@ import RegisterParkingLotPanel from "./register-parking-lot-panel";
 import { Layout, ParkingLot, ParkingSpace } from "@/hooks/use-parking";
 import { RouteInfo } from "./simple-map";
 import { useAuth } from "@/hooks/use-auth";
+import { useLocation } from "wouter";
 
 export type PanelType = "home" | "search" | "detail" | "booking" | "register";
 
@@ -51,11 +52,23 @@ export default function ContentPanel({
   const [matchingParkingLots, setMatchingLots] = useState<ParkingLot[]>(
     parkingLots ?? [],
   );
+  const [location, setLocation] = useLocation();
+
+  // Helper: update hash fragment for state sharing
+  const updateHash = (params: Record<string, string | undefined>) => {
+    const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+    Object.entries(params).forEach(([key, value]) => {
+      if (value === undefined || value === null) hashParams.delete(key);
+      else hashParams.set(key, value);
+    });
+    window.location.hash = hashParams.toString() ? `#${hashParams.toString()}` : "";
+  };
 
   // Update active panel only when a parking lot is selected
   useEffect(() => {
     if (selectedParkingLot) {
       setActivePanel("detail");
+      updateHash({ panel: "detail", lot: String(selectedParkingLot.id) });
     }
   }, [selectedParkingLot]);
 
@@ -63,6 +76,62 @@ export default function ContentPanel({
     if (parkingLots?.length) {
       setMatchingLots(parkingLots);
     }
+  }, [parkingLots]);
+
+  // Sync activePanel with hash
+  useEffect(() => {
+    if (activePanel === "home") updateHash({ panel: undefined, lot: undefined });
+    else if (activePanel === "search") updateHash({ panel: "search", lot: undefined });
+    else if (activePanel === "register") updateHash({ panel: "register", lot: undefined });
+    else if (activePanel === "booking" && selectedParkingLot) updateHash({ panel: "booking", lot: String(selectedParkingLot.id) });
+    // detail panel handled above
+  }, [activePanel]);
+
+  // On mount & when hash changes: parse hash to set initial panel/selection
+  useEffect(() => {
+    if (!parkingLots) return;
+    const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+    const panel = hashParams.get("panel") as PanelType | null;
+    const lotId = hashParams.get("lot");
+    if (lotId) {
+      const lot = parkingLots.find(l => l.id === Number(lotId));
+      if (lot) {
+        setSelectedParkingLot(lot);
+        if (panel === "booking") setActivePanel("booking");
+        else setActivePanel(panel || "detail");
+      } else {
+        // Nếu không tìm thấy lot, về home
+        updateHash({ panel: undefined, lot: undefined });
+        setActivePanel("home");
+      }
+    } else if (panel === "search") setActivePanel("search");
+    else if (panel === "register") setActivePanel("register");
+    else setActivePanel("home");
+  }, [parkingLots]);
+
+  // Listen to hashchange event
+  useEffect(() => {
+    const onHashChange = () => {
+      if (!parkingLots) return;
+      const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+      const panel = hashParams.get("panel") as PanelType | null;
+      const lotId = hashParams.get("lot");
+      if (lotId) {
+        const lot = parkingLots.find(l => l.id === Number(lotId));
+        if (lot) {
+          setSelectedParkingLot(lot);
+          if (panel === "booking") setActivePanel("booking");
+          else setActivePanel(panel || "detail");
+        } else {
+          updateHash({ panel: undefined, lot: undefined });
+          setActivePanel("home");
+        }
+      } else if (panel === "search") setActivePanel("search");
+      else if (panel === "register") setActivePanel("register");
+      else setActivePanel("home");
+    };
+    window.addEventListener("hashchange", onHashChange);
+    return () => window.removeEventListener("hashchange", onHashChange);
   }, [parkingLots]);
 
   const handleBookNow = () => {

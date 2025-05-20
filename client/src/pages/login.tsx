@@ -51,7 +51,18 @@ export default function Login() {
         username: data.email, // Using email field as username
         password: data.password,
       });
-      // Navigation is handled in the auth hook
+      // Sau khi đăng nhập thành công, kiểm tra redirectAfterLogin
+      if (typeof window !== 'undefined') {
+        const hash = localStorage.getItem("redirectAfterLogin");
+        if (hash && hash.startsWith("#")) {
+          localStorage.removeItem("redirectAfterLogin");
+          window.location.hash = hash;
+        } else {
+          navigate("/");
+        }
+      } else {
+        navigate("/");
+      }
     } catch (error) {
       setError(error instanceof Error ? error.message : "Đăng nhập thất bại");
     } finally {

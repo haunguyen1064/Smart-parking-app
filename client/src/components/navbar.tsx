@@ -49,7 +49,12 @@ export function Navbar() {
             </div>
           ) : (
             <div className="flex items-center gap-2">
-              <Link href="/login">
+              <Link href={"/login"} onClick={() => {
+                // Lưu lại hash fragment vào localStorage để redirect sau đăng nhập
+                if (typeof window !== 'undefined') {
+                  localStorage.setItem("redirectAfterLogin", window.location.hash || "");
+                }
+              }}>
                 <Button variant="ghost" size="sm">
                   Đăng nhập
                 </Button>
