@@ -252,6 +252,13 @@ export default function OwnerDashboard() {
     return null; // Will redirect via useEffect
   }
 
+  const handleAddParkingLotClick = () => {
+    navigate("/");
+    setTimeout(() => {
+      window.location.hash = "panel=register";
+    }, 0);
+  };
+
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
       <Navbar />
@@ -408,78 +415,10 @@ export default function OwnerDashboard() {
               {/* Parking Lots List */}
               <div className="mb-4 flex justify-between items-center">
                 <h2 className="text-xl font-semibold text-gray-800">Bãi xe của tôi</h2>
-                <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button className="bg-blue-600 hover:bg-blue-700">
-                      <Plus className="h-4 w-4 mr-2" />
-                      Thêm bãi xe
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="sm:max-w-md">
-                    <DialogHeader>
-                      <DialogTitle>Thêm bãi đỗ xe mới</DialogTitle>
-                      <DialogDescription>
-                        Nhập thông tin chi tiết để thêm bãi đỗ xe mới vào hệ thống.
-                      </DialogDescription>
-                    </DialogHeader>
-                    <div className="grid gap-4 py-4">
-                      <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="name" className="text-right">
-                          Tên bãi đỗ xe
-                        </Label>
-                        <Input
-                          id="name"
-                          className="col-span-3"
-                          placeholder="Nhập tên bãi đỗ xe"
-                          value={newParkingLotData.name}
-                          onChange={(e) => setNewParkingLotData({...newParkingLotData, name: e.target.value})}
-                        />
-                      </div>
-                      <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="address" className="text-right">
-                          Địa chỉ
-                        </Label>
-                        <Input
-                          id="address"
-                          className="col-span-3"
-                          placeholder="Nhập địa chỉ bãi đỗ xe"
-                          value={newParkingLotData.address}
-                          onChange={(e) => setNewParkingLotData({...newParkingLotData, address: e.target.value})}
-                        />
-                      </div>
-                      <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="totalSpots" className="text-right">
-                          Tổng số chỗ
-                        </Label>
-                        <Input
-                          id="totalSpots"
-                          type="number"
-                          className="col-span-3"
-                          placeholder="Nhập tổng số chỗ"
-                          value={newParkingLotData.totalSpots}
-                          onChange={(e) => setNewParkingLotData({...newParkingLotData, totalSpots: e.target.value})}
-                        />
-                      </div>
-                      <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="pricePerHour" className="text-right">
-                          Giá/giờ (VND)
-                        </Label>
-                        <Input
-                          id="pricePerHour"
-                          type="number"
-                          className="col-span-3"
-                          placeholder="Nhập giá/giờ"
-                          value={newParkingLotData.pricePerHour}
-                          onChange={(e) => setNewParkingLotData({...newParkingLotData, pricePerHour: e.target.value})}
-                        />
-                      </div>
-                    </div>
-                    <DialogFooter>
-                      <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>Hủy</Button>
-                      <Button onClick={handleAddParkingLot}>Thêm bãi đỗ xe</Button>
-                    </DialogFooter>
-                  </DialogContent>
-                </Dialog>
+                <Button className="bg-blue-600 hover:bg-blue-700" onClick={handleAddParkingLotClick}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Thêm bãi xe
+                </Button>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -564,11 +503,11 @@ export default function OwnerDashboard() {
                         OK
                       </Button>
                       <Button 
-                        variant="outline" 
-                        className="px-10 border-blue-500 text-blue-500"
+                        variant="outline"
+                        className="px-12"
                         onClick={() => setIsDeleteDialogOpen(false)}
                       >
-                        Cancel
+                        Hủy
                       </Button>
                     </div>
                   </div>

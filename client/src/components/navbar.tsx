@@ -10,7 +10,12 @@ export function Navbar() {
   return (
     <header className="bg-white shadow-sm">
       <div className="container mx-auto px-4 py-3 flex items-center justify-between">
-        <Link href="/">
+        <Link href="/" onClick={() => {
+          // Khi click logo, reset panel về home nếu có thể
+          if (typeof window !== 'undefined') {
+            window.location.hash = '';
+          }
+        }}>
           <div className="flex items-center space-x-2">
             <div className="bg-[#2D3137] p-1.5 rounded-md text-white">
               <CarFront className="h-5 w-5" />
