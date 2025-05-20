@@ -431,6 +431,12 @@ export default function SimpleMap({
           // Get the route path from the response
           const route = response.data.routes.features[0];
           
+          // Ensure geometry has type polyline
+          const polylineGeometry = {
+            type: "polyline",
+            paths: route.geometry.paths
+          };
+          
           // Create line symbols for the route
           const outlineSymbol = {
             type: "simple-line",
@@ -452,13 +458,13 @@ export default function SimpleMap({
           
           // Create graphics for the route
           const outlineGraphic = new Graphic({
-            geometry: route.geometry,
+            geometry: polylineGeometry,
             symbol: outlineSymbol,
             attributes: { type: "route-line-outline" }
           });
           
           const lineGraphic = new Graphic({
-            geometry: route.geometry,
+            geometry: polylineGeometry,
             symbol: lineSymbol,
             attributes: { type: "route-line" }
           });
@@ -470,7 +476,7 @@ export default function SimpleMap({
           // Get route info from the response
           const routeAttribs = route.attributes;
           const drivingDistance = routeAttribs.Total_Kilometers;
-          const drivingDuration = Math.round(routeAttribs.Total_Minutes);
+          const drivingDuration = Math.round(routeAttribs.Total_TravelTime);
           
           // Calculate walking time based on 5 km/h average walking speed
           const walkingDuration = Math.round(drivingDistance / 5 * 60);
@@ -488,47 +494,6 @@ export default function SimpleMap({
               duration: walkingDuration
             }
           ];
-          
-          // Safely zoom to show the route, handling potential geometry issues
-          try {
-            if (route.geometry && route.geometry.extent) {
-              view.goTo({
-                target: route.geometry,
-                padding: {
-                  top: 50,
-                  bottom: 50,
-                  left: 50,
-                  right: 50
-                }
-              }, {
-                duration: 1000,
-                easing: "ease-out"
-              });
-            } else {
-              // Fallback zooming to both points if extent isn't available
-              view.goTo({
-                target: [{
-                  type: "point",
-                  longitude: startLng,
-                  latitude: startLat
-                }, {
-                  type: "point",
-                  longitude: endLng,
-                  latitude: endLat
-                }],
-                padding: {
-                  top: 100,
-                  bottom: 100,
-                  left: 100,
-                  right: 100
-                }
-              });
-            }
-          } catch (err) {
-            console.warn("Error zooming to route:", err);
-            // Fallback to simpler zoom method
-            view.zoom = 13;
-          }
           
           // Notify parent component about routes
           if (onRouteCalculated) {
