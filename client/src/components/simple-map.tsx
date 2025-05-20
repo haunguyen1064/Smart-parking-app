@@ -71,7 +71,7 @@ export default function SimpleMap({
         ], { css: false }); // CSS is already loaded above
         
         // Configure API key
-        esriConfig.apiKey = "AAPTxy8BH1VEsoebNVZXo8HurJoE9iZ23rcLOCKv4LGb2GWB9M7bDmsO8WzljuTlRGXy2NEKygbZEcMd4NYx-tHCiaqPjA9ONpdFDEffSKRJagdQr7A8hbXH0idSNA9UeafnN_wTxbonRF19Xdfrr5hzrmSsNdTQgqz0QYvTa9I4hPrd_kqlnIACRyteJaKtWhQqqnu1uwmw-NRYPsktPk-gRzfNv-09JB2MXLhU3DiEELI";
+        esriConfig.apiKey = import.meta.env.VITE_ARCGIS_API_KEY;
         
         // Configure map with a basemap optimized for street navigation
         const map = new Map({
@@ -409,7 +409,7 @@ export default function SimpleMap({
         const requestOptions = {
           query: {
             f: "json",
-            token: "AAPTxy8BH1VEsoebNVZXo8HurJoE9iZ23rcLOCKv4LGb2GWB9M7bDmsO8WzljuTlRGXy2NEKygbZEcMd4NYx-tHCiaqPjA9ONpdFDEffSKRJagdQr7A8hbXH0idSNA9UeafnN_wTxbonRF19Xdfrr5hzrmSsNdTQgqz0QYvTa9I4hPrd_kqlnIACRyteJaKtWhQqqnu1uwmw-NRYPsktPk-gRzfNv-09JB2MXLhU3DiEELI",
+            token: import.meta.env.VITE_ARCGIS_API_KEY,
             stops: `${startLng},${startLat};${endLng},${endLat}`,
             returnDirections: true,
             directionsLanguage: "vi", // Vietnamese

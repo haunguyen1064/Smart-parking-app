@@ -240,7 +240,7 @@ export default function RegisterParkingLotPanel({ onBack }: RegisterParkingLotPa
             <div className="grid grid-cols-2 gap-2 mt-1 mb-2">
               <Select>
                 <SelectTrigger>
-                  <SelectValue placeholder="TPHCM" />
+                  <SelectValue placeholder="Chọn thành phó" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="hcm">TPHCM</SelectItem>

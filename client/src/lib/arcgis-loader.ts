@@ -20,7 +20,7 @@ export async function loadModules() {
     css: true
   }).then(([esriConfig]) => {
     // Configure API key
-    esriConfig.apiKey = "AAPTxy8BH1VEsoebNVZXo8HurJoE9iZ23rcLOCKv4LGb2GWB9M7bDmsO8WzljuTlRGXy2NEKygbZEcMd4NYx-tHCiaqPjA9ONpdFDEffSKRJagdQr7A8hbXH0idSNA9UeafnN_wTxbonRF19Xdfrr5hzrmSsNdTQgqz0QYvTa9I4hPrd_kqlnIACRyteJaKtWhQqqnu1uwmw-NRYPsktPk-gRzfNv-09JB2MXLhU3DiEELI";
+    esriConfig.apiKey = import.meta.env.VITE_ARCGIS_API_KEY;
     
     // Set portal URL if using a custom portal
     // esriConfig.portalUrl = "https://yourportal.domain.com/arcgis";
