@@ -98,7 +98,7 @@ const mockParkingLots = [
   },
   {
     id: 3,
-    name: "Bãi đỗ xe Thành Công",
+    name: "Bãi đỗ xe C",
     address: "59 Võ Văn Ngân, Thủ Đức",
     latitude: "10.8509",
     longitude: "106.7721",
@@ -460,12 +460,22 @@ export default function OwnerDashboard() {
                       </div>
                     </CardContent>
                     <CardFooter className="flex justify-between p-4 pt-2 bg-gray-50 border-t">
-                      <Button variant="ghost" size="sm" className="flex items-center text-blue-600">
+                      <Button variant="ghost" size="sm" className="flex items-center text-blue-600" onClick={() => {
+                        navigate("/");
+                        setTimeout(() => {
+                          window.location.hash = `panel=detail&lot=${lot.id}`;
+                        }, 0);
+                      }}>
                         <Info className="h-4 w-4 mr-1" />
                         <span>Chi tiết</span>
                       </Button>
                       <div className="flex space-x-2">
-                        <Button variant="ghost" size="sm" className="text-amber-600">
+                        <Button variant="ghost" size="sm" className="text-amber-600" onClick={() => {
+                          navigate("/");
+                          setTimeout(() => {
+                            window.location.hash = `panel=edit&lot=${lot.id}`;
+                          }, 0);
+                        }}>
                           <Edit className="h-4 w-4 mr-1" />
                           <span>Chỉnh sửa</span>
                         </Button>
